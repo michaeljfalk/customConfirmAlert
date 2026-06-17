@@ -863,6 +863,8 @@ Follows semver. **`1.1.0`** added the toast system as a purely **additive, backw
 change — existing `customAlert`/`customConfirm`/`customPrompt` and `CustomDialog.{alert,confirm,prompt}`
 signatures are unchanged, so upgrading from `1.0.x` is safe.
 
+See [`CHANGELOG.md`](./CHANGELOG.md) for the full release history.
+
 ---
 
 ## Browser support

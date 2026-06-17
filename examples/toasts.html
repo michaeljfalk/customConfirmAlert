@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover is required for env(safe-area-inset-*) on phones. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>customConfirmAlert — toast notifications example</title>
+
+    <!-- 1) The stylesheet (separate, themeable; includes toast styles). -->
+    <link rel="stylesheet" href="../dist/custom-dialog.css" />
+
+    <!-- 2) The global build (classic <script>, so this runs from file:// too).
+            Exposes a single global: window.CustomDialog. -->
+    <script src="../dist/custom-dialog.global.js"></script>
+
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; max-width: 46rem; margin: 2.5rem auto; padding: 0 1rem; }
+      h2 { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; color: #667085; margin: 1.6rem 0 0.5rem; }
+      button { font: inherit; padding: 0.55rem 0.9rem; margin: 0.2rem 0.2rem 0 0; border-radius: 8px;
+               border: 1px solid #cbd2dc; background: #fff; cursor: pointer; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center;
+                 padding: 0.75rem; border: 1px solid #e4e7ec; border-radius: 10px; margin-bottom: 0.5rem; }
+      .toolbar label { font-size: 0.85rem; color: #667085; }
+      select, input { font: inherit; padding: 0.35rem 0.5rem; border-radius: 7px; border: 1px solid #cbd2dc; }
+      pre { background: #f5f7fb; padding: 0.85rem; border-radius: 8px; min-height: 1.5rem; white-space: pre-wrap; }
+      code { background: #f5f7fb; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Toast notifications</h1>
+    <p>
+      Non-blocking feedback via <code>window.CustomDialog.toast()</code>. Toasts never
+      block the page or steal focus, and can appear while a modal dialog is open.
+      Open this file directly or serve it — both work.
+    </p>
+
+    <div class="toolbar">
+      <label for="position">Position</label>
+      <select id="position">
+        <option>top-left</option>
+        <option>top-center</option>
+        <option selected>top-right</option>
+        <option>bottom-left</option>
+        <option>bottom-center</option>
+        <option>bottom-right</option>
+      </select>
+      <label for="overflow">Overflow</label>
+      <select id="overflow">
+        <option value="queue" selected>queue</option>
+        <option value="dismiss-oldest">dismiss-oldest</option>
+        <option value="dismiss-newest">dismiss-newest</option>
+      </select>
+      <label for="max">Max visible</label>
+      <input id="max" type="number" min="1" max="9" value="5" style="width: 4rem" />
+    </div>
+
+    <h2>Variants</h2>
+    <button data-x="info">Info</button>
+    <button data-x="success">Success</button>
+    <button data-x="warning">Warning</button>
+    <button data-x="danger">Danger (assertive)</button>
+    <button data-x="neutral">Neutral</button>
+
+    <h2>Timing</h2>
+    <button data-x="timed">Auto-dismiss (3.5s)</button>
+    <button data-x="persistent">Persistent</button>
+    <button data-x="progress">Progress bar (5s)</button>
+    <button data-x="stack">Stack 6 (see overflow)</button>
+
+    <h2>Updating &amp; actions</h2>
+    <button data-x="autosave">Autosave (loading → success)</button>
+    <button data-x="dedup">Duplicate-ID update</button>
+    <button data-x="undo">Undo action</button>
+    <button data-x="action-error">Action with server error + retry</button>
+
+    <h2>Management</h2>
+    <button data-x="get">getToast('autosave-demo')</button>
+    <button data-x="close-all">closeAllToasts()</button>
+
+    <pre id="out">Result log…</pre>
+
+    <!-- 3) Your code (classic script). -->
+    <script>
+      const { customToast, configureToasts, getToast, closeAllToasts } = window.CustomDialog;
+      const out = (v) => (document.getElementById('out').textContent = JSON.stringify(v, null, 2));
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      const position = () => document.getElementById('position').value;
+      function applyConfig() {
+        configureToasts({
+          overflow: document.getElementById('overflow').value,
+          maxVisible: Number(document.getElementById('max').value) || 5,
+        });
+      }
+      document.getElementById('overflow').addEventListener('change', applyConfig);
+      document.getElementById('max').addEventListener('change', applyConfig);
+
+      const handlers = {
+        info: () => customToast({ position: position(), message: 'New comment on your invoice.', variant: 'info' }),
+        success: () => customToast({ position: position(), message: 'Edits saved', variant: 'success' }),
+        warning: () => customToast({ position: position(), title: 'Heads up', message: 'Two fields need attention.', variant: 'warning' }),
+        danger: () =>
+          customToast({ position: position(), title: 'Connection lost', message: 'We could not reach the server.', variant: 'danger', ariaLive: 'assertive' }),
+        neutral: () => customToast({ position: position(), message: 'Background task finished.', variant: 'neutral' }),
+
+        timed: () => customToast({ position: position(), message: 'Gone in 3.5s', variant: 'success', duration: 3500 }),
+        persistent: () =>
+          customToast({ position: position(), title: 'Offline', message: 'Changes will sync when the connection returns.', variant: 'warning', persistent: true }),
+        progress: () => customToast({ position: position(), message: 'Saved — closing soon', variant: 'success', duration: 5000, showProgress: true }),
+        stack: () => {
+          applyConfig();
+          for (let i = 1; i <= 6; i += 1) customToast({ position: position(), message: `Notification #${i}`, persistent: true });
+        },
+
+        autosave: () => {
+          const toast = customToast({
+            id: 'autosave-demo',
+            position: position(),
+            message: 'Saving changes…',
+            variant: 'info',
+            persistent: true,
+            dismissible: false,
+          });
+          setTimeout(() => {
+            toast.update({ message: 'Changes saved', variant: 'success', persistent: false, dismissible: true, duration: 2500 });
+            out({ autosave: 'updated in place → success' });
+          }, 1500);
+        },
+        dedup: () => {
+          const a = customToast({ id: 'dedup', position: position(), message: 'Saving…', variant: 'info', persistent: true });
+          const b = customToast({ id: 'dedup', position: position(), message: 'Saved', variant: 'success', persistent: false, duration: 2500 });
+          out({ sameController: a === b, note: 'second call updated the first; no duplicate' });
+        },
+        undo: () =>
+          customToast({
+            position: position(),
+            message: 'Invoice deleted',
+            variant: 'warning',
+            duration: 6000,
+            showProgress: true,
+            action: {
+              label: 'Undo',
+              pendingLabel: 'Undoing…',
+              onClick: async () => { await wait(700); out({ undo: 'restored' }); },
+            },
+          }),
+        'action-error': () => {
+          let attempts = 0;
+          customToast({
+            position: position(),
+            title: 'Sync pending',
+            message: 'Retry available.',
+            variant: 'warning',
+            persistent: true,
+            action: {
+              label: 'Retry',
+              pendingLabel: 'Retrying…',
+              onClick: async () => {
+                attempts += 1;
+                await wait(900);
+                if (attempts < 2) throw new Error('Server unavailable (503). Please try again.');
+                out({ retry: 'synced on attempt ' + attempts });
+              },
+            },
+          });
+        },
+
+        get: () => out({ getToast: getToast('autosave-demo') ? 'open' : 'not open' }),
+        'close-all': () => closeAllToasts().then(() => out({ closeAll: 'done' })),
+      };
+
+      document.querySelectorAll('[data-x]').forEach((btn) => {
+        btn.addEventListener('click', () => handlers[btn.getAttribute('data-x')]());
+      });
+    </script>
+  </body>
+</html>

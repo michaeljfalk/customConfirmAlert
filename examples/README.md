@@ -8,9 +8,10 @@ npm run build
 
 | File | How to run | Notes |
 | --- | --- | --- |
-| [`plain-html.html`](./plain-html.html) | **Double-click it** (or serve) | Classic `<script>` + global build → works over `file://`. |
+| [`plain-html.html`](./plain-html.html) | **Double-click it** (or serve) | Dialogs via the global build → works over `file://`. |
+| [`toasts.html`](./toasts.html) | **Double-click it** (or serve) | Toast notifications: variants, positions, timing, updates, actions, overflow. Works over `file://`. |
 | [`esm-module.html`](./esm-module.html) | **Serve**, then open `/examples/esm-module.html` | Uses ES-module `import`; browsers block modules over `file://`. |
-| [`node-api.mjs`](./node-api.mjs) | `node examples/node-api.mjs` | Verifies the import/export surface (no DOM rendering). |
+| [`node-api.mjs`](./node-api.mjs) | `node examples/node-api.mjs` | Verifies the import/export surface (dialogs + toasts; no DOM rendering). |
 
 ### Serving
 
