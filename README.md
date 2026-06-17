@@ -40,6 +40,8 @@ A small, polished, **accessible**, **themeable**, **dependency-free** UI primiti
 - [Framework examples](#framework-examples)
 - [Migrating from native `confirm()`](#migrating-from-native-confirm)
 - **[Toast notifications](#toast-notifications)** — [API](#toast-api) · [options](#toast-options) · [positioning](#positioning) · [updating](#updating-a-toast) · [IDs & dedup](#notification-ids--deduplication) · [actions](#toast-action-buttons) · [pause/resume](#toast-pause--resume) · [progress](#toast-progress-indicators) · [stack limits & overflow](#stack-limits--overflow-policies) · [accessibility](#toast-accessibility) · [security](#toast-security) · [mobile & swipe](#toast-mobile-behaviour--swipe) · [theming](#toast-theming) · [framework examples](#toast-framework-examples)
+- [Limitations](#limitations)
+- [Versioning & compatibility](#versioning--compatibility)
 - [Browser support](#browser-support)
 - [Building & testing](#building--testing)
 
@@ -57,6 +59,18 @@ npm install customconfirmalert
 
 You always need two things: the **JS** and the **CSS** (the stylesheet is shipped as a
 separate file so it is fully themeable and never auto-injected).
+
+### Mobile viewport (required for safe-area support)
+
+For dialogs and toasts to clear notches and the home indicator on phones, your page
+**must** include this meta tag — the package cannot set it for you:
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+```
+
+Without `viewport-fit=cover`, `env(safe-area-inset-*)` resolves to `0` and content sits
+flush to the screen edges (still usable, just not notch-aware).
 
 ---
 
@@ -710,12 +724,18 @@ leaked (action errors show only a safe message).
 
 ### Toast mobile behaviour & swipe
 
-Toasts honour `env(safe-area-inset-*)`, become comfortable full-width sheets on narrow screens,
-keep touch-friendly targets, wrap long words/URLs/filenames, and never exceed the viewport.
+Toasts honour `env(safe-area-inset-*)` (requires the [viewport meta](#mobile-viewport-required-for-safe-area-support)),
+become comfortable full-width sheets on narrow screens, keep touch-friendly targets, wrap long
+words/URLs/filenames, and never exceed the viewport.
 **Swipe-to-dismiss** (`swipeToDismiss`, default on) uses Pointer Events with a distance/velocity
 threshold, snaps back if insufficient, pauses the timer during the gesture, respects reduced
 motion, and uses `touch-action: pan-y` so vertical page scrolling is unaffected. Disable per
 toast with `swipeToDismiss: false`.
+
+> **Virtual keyboard:** inputs are ≥16px (no iOS zoom) and the focused element is scrolled into
+> view by the browser, but the library does **not** add `visualViewport`/`keyboard-inset-*`
+> handling. A bottom-anchored toast or prompt may be partially covered by the on-screen keyboard
+> in some browsers — see [Limitations](#limitations).
 
 > Gesture *feel* (velocity, pointer capture, scroll passthrough) is verified manually in a real
 > browser via the demo; the automated tests synthesize pointer events and cover the dismiss/snap
@@ -817,6 +837,31 @@ function notify() {
 
 <template><button @click="notify">Save</button></template>
 ```
+
+---
+
+## Limitations
+
+A short, honest list of edges that are intentionally out of scope or not fully covered:
+
+- **Virtual keyboard:** no `visualViewport`/`keyboard-inset-*` handling. Inputs are ≥16px and the
+  browser scrolls the focused field into view, but a bottom-anchored toast/prompt can be partially
+  covered by the on-screen keyboard in some mobile browsers.
+- **Safe-area insets require the host page** to set `viewport-fit=cover` (see [Installation](#installation));
+  the package cannot set the viewport meta for you.
+- **Swipe gesture *feel*** (velocity, pointer capture, scroll passthrough) is verified manually in a
+  real browser via the demo, not by the headless DOM tests (which cover the dismiss/snap logic).
+- **`toast.update({ position })` is ignored** — position is fixed at creation. Re-create the toast
+  to move it to another corner.
+- **`maxVisible` is per position**, not a single global cap across all six positions.
+- **Visual rendering** (animation curves, `forced-colors`, exact layout) is validated by inspection;
+  jsdom has no layout/paint engine, so it isn't pixel-asserted.
+
+## Versioning & compatibility
+
+Follows semver. **`1.1.0`** added the toast system as a purely **additive, backward-compatible**
+change — existing `customAlert`/`customConfirm`/`customPrompt` and `CustomDialog.{alert,confirm,prompt}`
+signatures are unchanged, so upgrading from `1.0.x` is safe.
 
 ---
 
