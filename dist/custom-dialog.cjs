@@ -1,4 +1,4 @@
-/*! customConfirmAlert v1.1.0 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
+/*! customConfirmAlert v1.1.1 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
