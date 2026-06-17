@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>customConfirmAlert — ES module example</title>
+
+    <link rel="stylesheet" href="../dist/custom-dialog.css" />
+
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
+      button { font: inherit; padding: 0.6rem 1rem; margin: 0.25rem 0.25rem 0 0; border-radius: 8px;
+               border: 1px solid #cbd2dc; background: #fff; cursor: pointer; }
+      pre { background: #f5f7fb; padding: 1rem; border-radius: 8px; min-height: 2rem; }
+    </style>
+  </head>
+  <body>
+    <h1>ES module example</h1>
+    <p>
+      Imports named functions from the ESM build. ES modules are blocked over
+      <code>file://</code> by browsers, so <strong>serve this one</strong>
+      (e.g. <code>npm run demo</code>, then open
+      <code>/examples/esm-module.html</code>).
+    </p>
+
+    <p>
+      <button id="confirm">Delete (confirm)</button>
+      <button id="prompt-validate">Prompt + validation</button>
+    </p>
+    <pre id="out">Result will appear here…</pre>
+
+    <!-- type="module" enables `import`. Tree-shakeable named exports. -->
+    <script type="module">
+      import { customConfirm, customPrompt } from '../dist/custom-dialog.esm.js';
+      const out = (v) => (document.getElementById('out').textContent = JSON.stringify(v));
+
+      document.getElementById('confirm').addEventListener('click', async () => {
+        const ok = await customConfirm({
+          title: 'Delete invoice?',
+          message: 'This action cannot be undone.',
+          variant: 'danger',
+          confirmText: 'Delete invoice',
+          cancelText: 'Keep invoice',
+        });
+        out({ confirmed: ok });
+      });
+
+      document.getElementById('prompt-validate').addEventListener('click', async () => {
+        const value = await customPrompt({
+          title: 'Choose a username',
+          message: 'Letters and numbers, at least 3 characters.',
+          inputLabel: 'Username',
+          validate: async (v) => {
+            await new Promise((r) => setTimeout(r, 250)); // pretend async check
+            if (!/^[a-z0-9]+$/i.test(v)) return 'Only letters and numbers allowed.';
+            if (v.length < 3) return 'Must be at least 3 characters.';
+            return true;
+          },
+        });
+        out({ value });
+      });
+    </script>
+  </body>
+</html>

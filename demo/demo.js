@@ -1,11 +1,8 @@
-// Demo wiring. Imports straight from source so the demo always reflects the
-// current code. In a real project you would import from the package instead:
+// Demo wiring (classic script, so this page also runs from file://).
+// The global build at ../dist/custom-dialog.global.js exposes window.CustomDialog.
+// In a real project you would import from the package instead:
 //   import { customAlert, customConfirm, customPrompt } from 'customconfirmalert';
-import {
-  customAlert,
-  customConfirm,
-  customPrompt,
-} from '../src/index.js';
+const { customAlert, customConfirm, customPrompt } = window.CustomDialog;
 
 const logEl = document.getElementById('log');
 function log(label, value) {

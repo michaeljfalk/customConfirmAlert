@@ -28,11 +28,13 @@
     "dist",
     "src",
     "types",
+    "examples",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
+    "demo": "npm run build && node scripts/serve.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm test"

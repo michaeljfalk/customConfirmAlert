@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>customConfirmAlert — plain HTML example</title>
+
+    <!-- 1) The stylesheet (separate, themeable file). -->
+    <link rel="stylesheet" href="../dist/custom-dialog.css" />
+
+    <!-- 2) The browser build. A classic <script> (not a module) loads even over
+            file://, so you can open this file directly by double-clicking it.
+            It exposes a single global: window.CustomDialog. -->
+    <script src="../dist/custom-dialog.global.js"></script>
+
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
+      button { font: inherit; padding: 0.6rem 1rem; margin: 0.25rem 0.25rem 0.25rem 0; border-radius: 8px;
+               border: 1px solid #cbd2dc; background: #fff; cursor: pointer; }
+      pre { background: #f5f7fb; padding: 1rem; border-radius: 8px; min-height: 2rem; }
+      code { background: #f5f7fb; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Plain HTML example</h1>
+    <p>
+      Uses the global build via <code>window.CustomDialog</code>. Open this file
+      directly (double-click) or serve it — both work.
+    </p>
+
+    <p>
+      <button id="alert">Alert</button>
+      <button id="confirm">Confirm (danger)</button>
+      <button id="prompt">Prompt</button>
+      <button id="async">Async confirm</button>
+    </p>
+
+    <pre id="out">Result will appear here…</pre>
+
+    <!-- 3) Your code. Also a classic script so file:// works. -->
+    <script>
+      // Pull the functions off the single global object.
+      const { customAlert, customConfirm, customPrompt } = window.CustomDialog;
+      const out = (v) => (document.getElementById('out').textContent = JSON.stringify(v));
+
+      document.getElementById('alert').addEventListener('click', async () => {
+        await customAlert({ title: 'Saved', message: 'Your changes were saved.', variant: 'success' });
+        out('alert dismissed');
+      });
+
+      document.getElementById('confirm').addEventListener('click', async () => {
+        const ok = await customConfirm({
+          title: 'Delete item?',
+          message: 'This cannot be undone.',
+          variant: 'danger',
+          confirmText: 'Delete',
+          cancelText: 'Keep',
+        });
+        out({ confirmed: ok });
+      });
+
+      document.getElementById('prompt').addEventListener('click', async () => {
+        const value = await customPrompt({
+          title: 'Rename',
+          message: 'Enter a new name.',
+          placeholder: 'New name',
+          defaultValue: 'Untitled',
+        });
+        out({ value }); // string, or null if cancelled
+      });
+
+      document.getElementById('async').addEventListener('click', async () => {
+        const ok = await customConfirm({
+          title: 'Archive project?',
+          variant: 'warning',
+          confirmText: 'Archive',
+          // Loading spinner shows while this runs; errors keep the dialog open.
+          onConfirm: () => new Promise((resolve) => setTimeout(resolve, 1000)),
+        });
+        out({ archived: ok });
+      });
+    </script>
+  </body>
+</html>

@@ -4,8 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>customConfirmAlert — demo</title>
-    <!-- The component's stylesheet (separate, themeable file). -->
-    <link rel="stylesheet" href="../src/custom-dialog.css" />
+    <!-- The component's stylesheet (separate, themeable file). Uses the built
+         dist/ files so this page works even when opened directly (file://). -->
+    <link rel="stylesheet" href="../dist/custom-dialog.css" />
     <link rel="stylesheet" href="./demo.css" />
   </head>
   <body>
@@ -77,6 +78,9 @@
       </p>
     </main>
 
-    <script type="module" src="./demo.js"></script>
+    <!-- Classic scripts (not modules) so the page also runs from file://.
+         The global build exposes window.CustomDialog; demo.js reads from it. -->
+    <script src="../dist/custom-dialog.global.js"></script>
+    <script src="./demo.js"></script>
   </body>
 </html>

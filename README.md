@@ -488,12 +488,41 @@ current browser versions.
 
 ```bash
 npm install      # dev tooling only (esbuild, vitest, jsdom) — zero runtime deps
-npm test         # Vitest + jsdom behaviour suite
+npm test         # Vitest + jsdom behaviour suite (incl. tests/examples.test.js)
 npm run build    # produces dist/ (ESM, CJS, IIFE, minified, CSS, .d.ts)
+npm run demo     # builds, then serves the project root at http://localhost:8080
 ```
 
-Open `demo/index.html` in a browser to explore every variant, theming, queueing,
-async confirmation, validation, and the mobile layout.
+### Running the demo
+
+The demo (`demo/index.html`) uses the **built `dist/` files**, so build first
+(or just run `npm run demo`, which builds and serves):
+
+```bash
+npm run demo
+# then open http://localhost:8080/demo/
+```
+
+Because it loads the global build via a classic `<script>`, you can also just
+**open `demo/index.html` directly** (double-click) after `npm run build` — no
+server needed. It explores every variant, theming, queueing, async confirmation,
+validation, and the mobile layout.
+
+> Note: serve from the **project root**, not from inside `demo/`. The page
+> references `../dist/...`, which lives one level up — serving the `demo/` folder
+> as the web root would 404 those files and the buttons would do nothing.
+
+### Examples
+
+Runnable, minimal examples live in [`examples/`](./examples/):
+
+| File | Run | |
+| --- | --- | --- |
+| `examples/plain-html.html` | double-click (or serve) | global build via `<script>`, works over `file://` |
+| `examples/esm-module.html` | serve, then open `/examples/esm-module.html` | ES-module `import` (blocked over `file://`) |
+| `examples/node-api.mjs` | `node examples/node-api.mjs` | verifies the export surface |
+
+These same usage patterns are executed automatically in `tests/examples.test.js`.
 
 ### Distribution output
 
