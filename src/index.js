@@ -9,6 +9,7 @@
 import { Dialog, VARIANTS } from './dialog.js';
 import { dialogQueue } from './queue.js';
 import { whenBodyReady } from './utils.js';
+import { toastManager } from './toast/toast-manager.js';
 
 /** @type {HTMLElement | null} */
 let sharedRoot = null;
@@ -165,8 +166,103 @@ export function customPrompt(options) {
   return show('prompt', options);
 }
 
-/** Grouped API. Mirrors the named exports. */
+/* ============================ Toast notifications ========================== */
+/* Non-modal, non-blocking feedback. Architecturally separate from the modal
+ * dialog queue: toasts never lock scrolling, inert content, or trap focus, and
+ * dialogs + toasts can be visible at the same time. See src/toast/. */
+
+/**
+ * @typedef {Object} ToastAction
+ * @property {string} label
+ * @property {string} [pendingLabel] - Label shown while an async action runs.
+ * @property {boolean} [closeOnSuccess] - Close the toast when the action resolves (default true).
+ * @property {() => void | Promise<void>} [onClick]
+ */
+
+/**
+ * @typedef {Object} ToastOptions
+ * @property {string} [id] - Stable id; a repeat call with the same id updates in place.
+ * @property {string} [title]
+ * @property {string|Node} [message]
+ * @property {'info'|'success'|'warning'|'danger'|'neutral'} [variant]
+ * @property {string|Node|false} [icon]
+ * @property {'top-left'|'top-center'|'top-right'|'bottom-left'|'bottom-center'|'bottom-right'} [position]
+ * @property {number} [duration] - Auto-dismiss after N ms (ignored when persistent).
+ * @property {boolean} [persistent] - Stay until closed/updated; overrides duration.
+ * @property {boolean} [dismissible] - Show the close (×) button.
+ * @property {boolean} [pauseOnHover]
+ * @property {boolean} [pauseOnFocus]
+ * @property {boolean} [showProgress]
+ * @property {boolean} [swipeToDismiss]
+ * @property {ToastAction} [action]
+ * @property {string} [closeLabel]
+ * @property {'auto'|'slide-down'|'slide-up'|'slide-left'|'slide-right'|'fade'|'scale'|'none'} [enterAnimation]
+ * @property {'auto'|'slide-down'|'slide-up'|'slide-left'|'slide-right'|'fade'|'scale'|'none'} [exitAnimation]
+ * @property {'polite'|'assertive'|'off'} [ariaLive]
+ * @property {boolean} [allowHtml] - Caller is responsible for sanitisation.
+ * @property {string} [className]
+ * @property {any} [data]
+ * @property {() => void} [onOpen]
+ * @property {() => void} [onClose]
+ * @property {() => void | Promise<void>} [onAction]
+ */
+
+/**
+ * @typedef {Object} ToastController
+ * @property {string} id
+ * @property {(options: Partial<ToastOptions>) => ToastController} update - Update in place.
+ * @property {() => Promise<void>} close - Resolves after the exit animation + cleanup.
+ * @property {() => boolean} isOpen
+ */
+
+/**
+ * Show a non-blocking toast notification.
+ * @param {ToastOptions|string} options
+ * @returns {ToastController}
+ */
+export function customToast(options) {
+  return toastManager.create(options);
+}
+
+/**
+ * Configure global toast behaviour (limits, overflow policy, defaults).
+ * @param {{ maxVisible?: number, overflow?: 'queue'|'dismiss-oldest'|'dismiss-newest', defaultPosition?: ToastOptions['position'], defaultDuration?: number }} config
+ * @returns {object} The resolved configuration.
+ */
+export function configureToasts(config) {
+  return toastManager.configure(config);
+}
+
+/**
+ * Close a toast by id.
+ * @param {string} id
+ * @returns {Promise<void>}
+ */
+export function closeToast(id) {
+  return toastManager.closeToast(id);
+}
+
+/**
+ * Get the controller for a live toast by id, or null.
+ * @param {string} id
+ * @returns {ToastController|null}
+ */
+export function getToast(id) {
+  return toastManager.getToast(id);
+}
+
+/**
+ * Close all toasts, optionally filtered by position and/or variant.
+ * @param {{ position?: ToastOptions['position'], variant?: ToastOptions['variant'] }} [filter]
+ * @returns {Promise<void>}
+ */
+export function closeAllToasts(filter) {
+  return toastManager.closeAllToasts(filter);
+}
+
+/** Grouped API. Mirrors the named exports (dialogs + toasts). */
 export const CustomDialog = {
+  // Modal dialogs
   alert: customAlert,
   confirm: customConfirm,
   prompt: customPrompt,
@@ -174,6 +270,12 @@ export const CustomDialog = {
   get queueSize() {
     return dialogQueue.size;
   },
+  // Toast notifications
+  toast: customToast,
+  configureToasts,
+  closeToast,
+  getToast,
+  closeAllToasts,
 };
 
 export default CustomDialog;

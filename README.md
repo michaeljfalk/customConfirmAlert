@@ -1,15 +1,22 @@
 # customConfirmAlert
 
-A small, polished, **accessible**, **themeable**, **dependency-free** replacement for the *visual* role of `alert()`, `confirm()`, and `prompt()`.
+A small, polished, **accessible**, **themeable**, **dependency-free** UI primitive providing **two clearly separate systems**:
+
+1. **Modal dialogs** (`customAlert` / `customConfirm` / `customPrompt`) — for actions that need attention or a decision.
+2. **Toast notifications** (`customToast`) — non-blocking, passive feedback (saved, upload complete, connection lost, undo…).
 
 - ✅ Native JS / HTML / CSS — **no runtime dependencies**, no framework code in core
-- ✅ **Promise-based** API (`customAlert`, `customConfirm`, `customPrompt`)
+- ✅ **Promise-based** dialogs; **controller-based** toasts (`update`/`close`/`isOpen`)
 - ✅ Works in plain HTML, Meteor + Blaze, React, Vue, Svelte, Express-rendered, and static sites
-- ✅ Accessible by default: focus trap, focus restoration, `role`/`aria-*`, `inert`, Escape/Tab/Enter, reduced-motion & high-contrast support
-- ✅ Sequential **queue** — only one dialog at a time, no stacking, no double-resolve
-- ✅ Async `onConfirm` with loading state, error display, and retry
-- ✅ Light/dark/auto themes via CSS custom properties; per-project and per-dialog overrides
+- ✅ Accessible: dialogs trap focus & inert the page; toasts are live regions that **never** trap/steal focus or block the page
+- ✅ Sequential dialog **queue**; independent toast **stacking** with limits, overflow policies, dedup, pause-on-hover/focus
+- ✅ Async `onConfirm` / toast actions with loading state, error display, and retry
+- ✅ Shared light/dark/auto themes via CSS custom properties; per-project and per-instance overrides
 - 🚫 **Does not** override `window.alert` / `window.confirm` / `window.prompt`
+
+> [!TIP]
+> **Use a modal dialog when the user must make a decision or acknowledge important information.
+> Use a toast when the application is reporting non-blocking status or feedback.**
 
 > [!IMPORTANT]
 > **Native `confirm()` is synchronous; this API is asynchronous.** You must `await`
@@ -32,6 +39,7 @@ A small, polished, **accessible**, **themeable**, **dependency-free** replacemen
 - [Security](#security)
 - [Framework examples](#framework-examples)
 - [Migrating from native `confirm()`](#migrating-from-native-confirm)
+- **[Toast notifications](#toast-notifications)** — [API](#toast-api) · [options](#toast-options) · [positioning](#positioning) · [updating](#updating-a-toast) · [IDs & dedup](#notification-ids--deduplication) · [actions](#toast-action-buttons) · [pause/resume](#toast-pause--resume) · [progress](#toast-progress-indicators) · [stack limits & overflow](#stack-limits--overflow-policies) · [accessibility](#toast-accessibility) · [security](#toast-security) · [mobile & swipe](#toast-mobile-behaviour--swipe) · [theming](#toast-theming) · [framework examples](#toast-framework-examples)
 - [Browser support](#browser-support)
 - [Building & testing](#building--testing)
 
@@ -472,6 +480,343 @@ if (confirmed) {
 The enclosing function must be `async` (or use `.then(...)`). Code *after* the dialog call
 no longer runs synchronously — move anything that depends on the answer inside the
 `if (confirmed)` block or a `.then()` callback.
+
+---
+
+## Toast notifications
+
+Toasts are **non-modal, non-blocking** feedback. They are a completely separate system
+from the modal dialogs:
+
+| | Modal dialog | Toast notification |
+| --- | --- | --- |
+| Purpose | A decision / acknowledgement is required | Passive status & feedback |
+| Blocking | Yes — backdrop, scroll-lock, background `inert`, focus trap | **No** — never blocks, traps, or steals focus |
+| Concurrency | One at a time (queued) | Many stacked, per position, with limits |
+| Return | `Promise` (await the result) | A **controller** (`update` / `close` / `isOpen`) |
+
+> Toasts and dialogs are independent: a toast can be visible while a dialog is open.
+> Toasts are **not** implemented inside `customAlert()`.
+
+### Toast API
+
+```js
+import { customToast, CustomDialog } from 'customconfirmalert';
+import 'customconfirmalert/css';
+
+customToast({ message: 'Edits saved', variant: 'success' });
+CustomDialog.toast({ message: 'Edits saved', variant: 'success' }); // identical
+```
+
+`customToast(options)` returns a **controller**:
+
+```js
+const toast = customToast({
+  title: 'Uploading',
+  message: 'Your document is being uploaded.',
+  variant: 'info',
+  persistent: true,
+});
+
+toast.update({ title: 'Upload complete', message: 'Done.', variant: 'success', persistent: false, duration: 3000 });
+await toast.close(); // resolves after the exit animation + cleanup
+
+toast.id;          // string
+toast.isOpen();    // boolean
+```
+
+| Function | Returns |
+| --- | --- |
+| `customToast(options)` | `ToastController` |
+| `CustomDialog.toast(options)` | `ToastController` |
+| `closeToast(id)` / `CustomDialog.closeToast(id)` | `Promise<void>` |
+| `getToast(id)` / `CustomDialog.getToast(id)` | `ToastController \| null` |
+| `closeAllToasts(filter?)` / `CustomDialog.closeAllToasts(filter?)` | `Promise<void>` |
+| `configureToasts(config)` / `CustomDialog.configureToasts(config)` | resolved config |
+
+A string argument is shorthand for the message: `customToast('Saved')`.
+
+### Toast options
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `id` | `string` | auto | Repeat call with same id **updates in place** (see dedup). |
+| `title` | `string` | — | |
+| `message` | `string \| Node` | — | A DOM Node/Fragment is the safe rich-content path. |
+| `variant` | `'info'\|'success'\|'warning'\|'danger'\|'neutral'` | `'info'` | |
+| `icon` | `string \| Node \| false` | auto | `false` hides it. |
+| `position` | `ToastPosition` | `'top-right'` | Six positions (below). |
+| `duration` | `number` (ms) | `4000` | Auto-dismiss; ignored while `persistent`. |
+| `persistent` | `boolean` | `false` | Stays until closed/updated; **overrides `duration`**. |
+| `dismissible` | `boolean` | `true` | Show the close (×) button. |
+| `pauseOnHover` | `boolean` | `true` | |
+| `pauseOnFocus` | `boolean` | `true` | |
+| `showProgress` | `boolean` | `false` | Visual time-remaining bar. |
+| `swipeToDismiss` | `boolean` | `true` | Horizontal swipe (touch/pointer). |
+| `action` | `ToastAction` | — | One optional action button (below). |
+| `closeLabel` | `string` | `'Dismiss notification'` | Close-button aria-label. |
+| `enterAnimation` / `exitAnimation` | `ToastAnimation` | `'auto'` | `auto` derives from position. |
+| `ariaLive` | `'polite'\|'assertive'\|'off'` | `'polite'` | Use `assertive` only for urgent toasts. |
+| `allowHtml` | `boolean` | `false` | Caller MUST sanitise. |
+| `className` | `string` | — | Per-toast theming hook. |
+| `data` | `any` | — | Passed through untouched. |
+| `onOpen` / `onClose` | `() => void` | — | Lifecycle callbacks. |
+| `onAction` | `() => void \| Promise<void>` | — | Alternative to `action.onClick`. |
+
+**Variants:** `info` · `success` · `warning` · `danger` · `neutral`.
+
+### Timed vs persistent
+
+```js
+customToast({ message: 'Edits saved', variant: 'success', duration: 3500 }); // auto-dismiss
+
+customToast({
+  title: 'Connection lost',
+  message: 'Changes will sync when the connection returns.',
+  variant: 'warning',
+  persistent: true,           // overrides duration; stays until closed/updated
+  dismissible: true,
+});
+```
+
+The dismiss timer **only starts once the toast has visibly entered**, and exit always
+plays the close animation before the toast is removed from the DOM (with a safe timeout
+fallback if the animation event never fires).
+
+### Positioning
+
+`top-left` · `top-center` · `top-right` · `bottom-left` · `bottom-center` · `bottom-right`.
+
+Each position has its **own lazily-created container** (created on first use, removed when
+empty). Newer toasts appear nearest the screen edge (top positions prepend; bottom positions
+append). Toasts never overlap and honour mobile safe-area insets.
+
+`enterAnimation`/`exitAnimation` accept `slide-down`, `slide-up`, `slide-left`, `slide-right`,
+`fade`, `scale`, `none`, or `auto`. `auto` derives the natural motion from the position
+(e.g. `top-center` slides down in / up out; `bottom-left` slides in from the left). All
+animation uses transforms + opacity and respects `prefers-reduced-motion`.
+
+```js
+customToast({ message: 'Report generated', position: 'top-center', enterAnimation: 'slide-down', exitAnimation: 'slide-up' });
+```
+
+### Updating a toast
+
+`update()` mutates the existing toast **in place** (no destroy/recreate) and returns the
+controller. **Timing rules** (documented and stable):
+
+- A new `duration` **restarts** the timer.
+- `persistent: true` **stops** the timer immediately (timed → persistent).
+- `persistent: false` **begins** the timer (persistent → timed).
+- `position` changes on update are ignored (re-create for a new position).
+
+```js
+const toast = customToast({ id: 'autosave', message: 'Saving changes…', variant: 'info', persistent: true, dismissible: false });
+setTimeout(() => {
+  toast.update({ message: 'Changes saved', variant: 'success', persistent: false, dismissible: true, duration: 2500 });
+}, 1500);
+```
+
+### Notification IDs & deduplication
+
+Provide a stable `id` to address a toast across calls. **Default dedup policy:** a second
+`customToast` with the same `id` **updates the existing toast in place, creates no duplicate,
+and returns the existing controller**.
+
+```js
+customToast({ id: 'autosave-status', message: 'Saving…', variant: 'info', persistent: true });
+customToast({ id: 'autosave-status', message: 'Saved', variant: 'success', persistent: false, duration: 2500 });
+// → one toast, updated in place
+
+CustomDialog.closeToast('autosave-status');
+CustomDialog.getToast('autosave-status');     // controller or null
+CustomDialog.closeAllToasts({ position: 'bottom-right' }); // optional position/variant filter
+```
+
+### Toast action buttons
+
+One optional action button, keyboard accessible, sync or async:
+
+```js
+customToast({
+  message: 'Invoice deleted',
+  variant: 'warning',
+  action: {
+    label: 'Undo',
+    pendingLabel: 'Undoing…',   // shown while async work runs
+    closeOnSuccess: true,        // default true
+    onClick: async () => { await restoreInvoice(); },
+  },
+});
+
+// Or the top-level callback form:
+customToast({ message: 'Invoice deleted', action: { label: 'Undo' }, onAction: async () => { await restoreInvoice(); } });
+```
+
+While an async action runs: the button is disabled with a spinner/`pendingLabel`, repeated
+activation is prevented, and the dismiss timer pauses. **On success** the toast closes (unless
+`closeOnSuccess: false`). **On failure** the toast stays open, auto-dismiss is cancelled, and a
+safe, human-readable error is shown for retry or dismissal — raw stack traces are never exposed.
+
+### Toast pause & resume
+
+Timed toasts pause on hover (`pauseOnHover`), while focus is inside (`pauseOnFocus`), during a
+swipe, while an async action runs, and **while the browser tab is hidden**. Multiple pause
+reasons are tracked independently — the countdown resumes only when **all** are cleared, using
+the **actual remaining time** (not a fresh full duration). Interactions that happen *during* the
+enter animation are captured and applied once the timer begins.
+
+### Toast progress indicators
+
+`showProgress: true` adds a bar that reflects the remaining time. It pauses/resumes with the
+timer, restarts on a new `duration`, is themed via CSS custom properties, and is simplified under
+reduced motion. It is never the *only* indication that a toast will close.
+
+### Stack limits & overflow policies
+
+```js
+CustomDialog.configureToasts({
+  maxVisible: 5,            // max simultaneously-visible toasts PER position
+  overflow: 'queue',       // 'queue' | 'dismiss-oldest' | 'dismiss-newest'
+  defaultPosition: 'top-right',
+  defaultDuration: 4000,
+});
+```
+
+When a position is full (`maxVisible` reached):
+
+- **`queue`** (default) — hold extra toasts until a slot frees, then show them in order.
+- **`dismiss-oldest`** — close the oldest visible toast to make room for the new one.
+- **`dismiss-newest`** — discard the incoming request (its controller reports `isOpen() === false`).
+
+`maxVisible` is enforced **per position** (each container stacks independently).
+
+### Toast accessibility
+
+- Live-region semantics live on **each toast** (not the container) to avoid duplicate
+  announcements: `role="status"` + `aria-live="polite"` normally, or `role="alert"` +
+  `aria-live="assertive"` when you set `ariaLive: 'assertive'` (don't make everything assertive).
+  `aria-atomic="true"` so loading→success/failure updates are announced as a whole.
+- **No** focus stealing, **no** focus trap, **no** `aria-modal`, **no** page `inert`/blocking.
+- Close and action buttons are real `<button>`s with accessible labels and visible
+  `:focus-visible` rings; high-contrast (`forced-colors`) and reduced-motion supported.
+
+### Toast security
+
+Same rules as the dialogs: plain strings render with `textContent` (never `innerHTML`); pass a
+**DOM Node/Fragment** for safe rich content; `allowHtml: true` is opt-in and the caller owns
+sanitisation. No inline handlers, no `eval`/`new Function`, and internal/error details are never
+leaked (action errors show only a safe message).
+
+### Toast mobile behaviour & swipe
+
+Toasts honour `env(safe-area-inset-*)`, become comfortable full-width sheets on narrow screens,
+keep touch-friendly targets, wrap long words/URLs/filenames, and never exceed the viewport.
+**Swipe-to-dismiss** (`swipeToDismiss`, default on) uses Pointer Events with a distance/velocity
+threshold, snaps back if insufficient, pauses the timer during the gesture, respects reduced
+motion, and uses `touch-action: pan-y` so vertical page scrolling is unaffected. Disable per
+toast with `swipeToDismiss: false`.
+
+> Gesture *feel* (velocity, pointer capture, scroll passthrough) is verified manually in a real
+> browser via the demo; the automated tests synthesize pointer events and cover the dismiss/snap
+> logic. This is the one area not fully exercised by the headless DOM tests.
+
+### Toast theming
+
+Reuses the dialog tokens and adds toast-specific ones. Override on `:root`, a wrapper, or per
+toast via `className`. Dark mode is automatic (`prefers-color-scheme`) or forced with
+`data-cd-theme="dark"`.
+
+```css
+:root {
+  --custom-toast-width: 22rem;
+  --custom-toast-max-width: calc(100vw - 2rem);
+  --custom-toast-gap: 0.75rem;
+  --custom-toast-edge-offset: 1rem;
+  --custom-toast-padding: 1rem;
+  --custom-toast-border-radius: 12px;
+  --custom-toast-background: var(--custom-dialog-background);
+  --custom-toast-text: var(--custom-dialog-text);
+  --custom-toast-muted-text: var(--custom-dialog-muted-text);
+  --custom-toast-border: var(--custom-dialog-border);
+  --custom-toast-shadow: var(--custom-dialog-shadow);
+  --custom-toast-z-index: 11000;
+  --custom-toast-close-size: 2rem;
+  --custom-toast-animation-duration: 220ms;
+  --custom-toast-progress-height: 3px;
+}
+```
+
+### Toast framework examples
+
+**Plain JavaScript**
+
+```js
+customToast({ message: 'Edits saved', variant: 'success' });
+```
+
+**Browser bundle** — `window.CustomDialog` carries every toast method (no extra globals):
+
+```html
+<link rel="stylesheet" href="custom-dialog.css" />
+<script src="custom-dialog.global.min.js"></script>
+<script>
+  CustomDialog.toast({ message: 'Saved', variant: 'success' });
+  CustomDialog.closeAllToasts();
+  CustomDialog.configureToasts({ maxVisible: 3, overflow: 'dismiss-oldest' });
+</script>
+```
+
+**Meteor + Blaze** (use `Meteor.callAsync`):
+
+```js
+import { customToast } from 'customconfirmalert';
+
+Template.profileForm.events({
+  async 'submit form'(event) {
+    event.preventDefault();
+    const toast = customToast({ id: 'profile-save', message: 'Saving profile…', variant: 'info', persistent: true, dismissible: false });
+    try {
+      await Meteor.callAsync('profile.update', collectProfileFormData(event.currentTarget));
+      toast.update({ message: 'Profile saved', variant: 'success', persistent: false, dismissible: true, duration: 3000 });
+    } catch (error) {
+      toast.update({ title: 'Could not save profile', message: getSafeErrorMessage(error), variant: 'danger', persistent: true, dismissible: true });
+    }
+  },
+});
+```
+
+**React** — call the framework-agnostic API from an event handler (no provider/component):
+
+```jsx
+import { customToast } from 'customconfirmalert';
+
+function SaveButton({ record }) {
+  async function handleSave() {
+    const toast = customToast({ id: `save-${record.id}`, message: 'Saving…', variant: 'info', persistent: true });
+    try {
+      await api.save(record);
+      toast.update({ message: 'Saved', variant: 'success', persistent: false, duration: 2500 });
+    } catch (e) {
+      toast.update({ title: 'Save failed', message: getSafeMessage(e), variant: 'danger', persistent: true });
+    }
+  }
+  return <button onClick={handleSave}>Save</button>;
+}
+```
+
+**Vue (Composition API)**
+
+```vue
+<script setup>
+import { customToast } from 'customconfirmalert';
+function notify() {
+  customToast({ message: 'Edits saved', variant: 'success' });
+}
+</script>
+
+<template><button @click="notify">Save</button></template>
+```
 
 ---
 

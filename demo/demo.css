@@ -119,3 +119,26 @@ html.demo-brand {
   --custom-dialog-font-family: 'Georgia', serif;
   --custom-dialog-shadow: 0 30px 80px rgb(124 58 237 / 0.35);
 }
+
+/* Toast demo toolbar */
+.demo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+  background: var(--demo-card);
+  border: 1px solid var(--demo-border);
+  border-radius: 12px;
+}
+.demo-toolbar label { font-size: 0.85rem; color: var(--demo-muted); }
+.demo-toolbar select,
+.demo-toolbar input {
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--demo-border);
+  background: var(--demo-card);
+  color: var(--demo-text);
+}

@@ -49,7 +49,8 @@ async function run() {
     js: `window.CustomDialog = Object.assign(${globalName}.CustomDialog, {
   customAlert: ${globalName}.customAlert,
   customConfirm: ${globalName}.customConfirm,
-  customPrompt: ${globalName}.customPrompt
+  customPrompt: ${globalName}.customPrompt,
+  customToast: ${globalName}.customToast
 });
 try { window.${globalName} = void 0; } catch (e) {}`,
   };

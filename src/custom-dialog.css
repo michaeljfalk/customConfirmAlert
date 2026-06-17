@@ -370,3 +370,290 @@
     width: 100%;
   }
 }
+
+/* ===========================================================================
+   TOAST NOTIFICATIONS
+   Non-modal, non-blocking feedback. Shares the dialog design tokens; adds
+   toast-specific tokens. Containers are click-through (pointer-events: none);
+   individual cards are interactive (pointer-events: auto).
+   =========================================================================== */
+
+:root {
+  --custom-toast-width: 22rem;
+  --custom-toast-max-width: calc(100vw - 2rem);
+  --custom-toast-gap: 0.75rem;
+  --custom-toast-edge-offset: 1rem;
+  --custom-toast-padding: 1rem;
+  --custom-toast-border-radius: 12px;
+  --custom-toast-background: var(--custom-dialog-background);
+  --custom-toast-text: var(--custom-dialog-text);
+  --custom-toast-muted-text: var(--custom-dialog-muted-text);
+  --custom-toast-border: var(--custom-dialog-border);
+  --custom-toast-shadow: var(--custom-dialog-shadow);
+  --custom-toast-z-index: 11000;
+  --custom-toast-close-size: 2rem;
+  --custom-toast-animation-duration: 220ms;
+  --custom-toast-progress-height: 3px;
+  --custom-toast-error-text: var(--custom-dialog-error-text);
+}
+
+/* --- Containers (one per active position, created lazily) ------------------ */
+.ct-container {
+  position: fixed;
+  z-index: var(--custom-toast-z-index);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(var(--custom-toast-width), var(--custom-toast-max-width));
+  max-width: var(--custom-toast-max-width);
+  /* Empty areas must not block the page. */
+  pointer-events: none;
+  font-family: var(--custom-dialog-font-family);
+}
+
+/* Position anchors honour mobile safe-area insets (notches, home indicator). */
+.ct-pos-top-left {
+  top: calc(env(safe-area-inset-top) + var(--custom-toast-edge-offset));
+  left: calc(env(safe-area-inset-left) + var(--custom-toast-edge-offset));
+  align-items: flex-start;
+}
+.ct-pos-top-right {
+  top: calc(env(safe-area-inset-top) + var(--custom-toast-edge-offset));
+  right: calc(env(safe-area-inset-right) + var(--custom-toast-edge-offset));
+  align-items: flex-end;
+}
+.ct-pos-top-center {
+  top: calc(env(safe-area-inset-top) + var(--custom-toast-edge-offset));
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+.ct-pos-bottom-left {
+  bottom: calc(env(safe-area-inset-bottom) + var(--custom-toast-edge-offset));
+  left: calc(env(safe-area-inset-left) + var(--custom-toast-edge-offset));
+  align-items: flex-start;
+}
+.ct-pos-bottom-right {
+  bottom: calc(env(safe-area-inset-bottom) + var(--custom-toast-edge-offset));
+  right: calc(env(safe-area-inset-right) + var(--custom-toast-edge-offset));
+  align-items: flex-end;
+}
+.ct-pos-bottom-center {
+  bottom: calc(env(safe-area-inset-bottom) + var(--custom-toast-edge-offset));
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+}
+
+/* --- Toast card ------------------------------------------------------------ */
+.ct-toast {
+  pointer-events: auto;
+  box-sizing: border-box;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 0.75rem;
+  width: 100%;
+  max-height: min(calc(100vh - 2rem), 80vh);
+  margin-bottom: var(--custom-toast-gap);
+  padding: var(--custom-toast-padding);
+  background: var(--custom-toast-background);
+  color: var(--custom-toast-text);
+  border: 1px solid var(--custom-toast-border);
+  border-left: 4px solid var(--ct-accent, var(--custom-dialog-primary));
+  border-radius: var(--custom-toast-border-radius);
+  box-shadow: var(--custom-toast-shadow);
+  /* Animate only transform/opacity (+ collapse on exit) — no layout thrash. */
+  transition:
+    transform var(--custom-toast-animation-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    opacity var(--custom-toast-animation-duration) ease,
+    max-height var(--custom-toast-animation-duration) ease,
+    margin var(--custom-toast-animation-duration) ease;
+  will-change: transform, opacity;
+  /* Let the browser keep vertical scrolling; we own horizontal swipes. */
+  touch-action: pan-y;
+}
+
+/* Variant accents reuse the shared dialog colours. */
+.ct-variant-info    { --ct-accent: var(--custom-dialog-info, var(--custom-dialog-primary)); }
+.ct-variant-success { --ct-accent: var(--custom-dialog-success); }
+.ct-variant-warning { --ct-accent: var(--custom-dialog-warning); }
+.ct-variant-danger  { --ct-accent: var(--custom-dialog-danger); }
+.ct-variant-neutral { --ct-accent: var(--custom-toast-muted-text); }
+
+.ct-icon {
+  display: flex;
+  color: var(--ct-accent, var(--custom-dialog-primary));
+}
+.ct-icon > svg { width: 1.4rem; height: 1.4rem; }
+
+.ct-content {
+  grid-column: 2;
+  min-width: 0;
+  overflow-y: auto;
+}
+.ct-title {
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--custom-toast-text);
+  overflow-wrap: anywhere;
+}
+.ct-title[hidden] { display: none; }
+.ct-message {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--custom-toast-muted-text);
+  overflow-wrap: anywhere;
+}
+.ct-message[hidden] { display: none; }
+.ct-title + .ct-message { margin-top: 0.15rem; }
+
+.ct-error {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--custom-toast-error-text);
+  overflow-wrap: anywhere;
+}
+.ct-error[hidden] { display: none; }
+
+/* --- Action button --------------------------------------------------------- */
+.ct-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.ct-actions[hidden] { display: none; }
+.ct-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  color: var(--ct-accent, var(--custom-dialog-primary));
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 2rem;
+}
+.ct-action:not([disabled]):hover { filter: brightness(1.1); background: color-mix(in srgb, var(--ct-accent) 10%, transparent); }
+.ct-action[disabled] { opacity: 0.7; cursor: default; }
+.ct-action:focus-visible {
+  outline: 2px solid var(--custom-dialog-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --- Close button ---------------------------------------------------------- */
+.ct-close {
+  grid-column: 3;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  min-width: 1.9rem;
+  margin: -0.25rem -0.25rem 0 0;
+  padding: 0;
+  color: var(--custom-toast-muted-text);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.ct-close[hidden] { display: none; }
+.ct-close:hover { background: color-mix(in srgb, var(--custom-toast-muted-text) 15%, transparent); }
+.ct-close:focus-visible {
+  outline: 2px solid var(--custom-dialog-focus-ring);
+  outline-offset: 1px;
+}
+.ct-close[disabled] { opacity: 0.5; cursor: default; }
+
+/* --- Progress indicator ---------------------------------------------------- */
+.ct-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--custom-toast-progress-height);
+  border-bottom-left-radius: var(--custom-toast-border-radius);
+  border-bottom-right-radius: var(--custom-toast-border-radius);
+  overflow: hidden;
+  pointer-events: none;
+}
+.ct-progress[hidden] { display: none; }
+.ct-progress-bar {
+  width: 100%;
+  height: 100%;
+  background: var(--ct-accent, var(--custom-dialog-primary));
+  transform-origin: left center;
+  transform: scaleX(1);
+}
+
+/* --- Spinner (reuses the dialog spinner animation) ------------------------- */
+.ct-action .cd-spinner circle {
+  stroke: currentColor;
+  stroke-dasharray: 42;
+  stroke-dashoffset: 14;
+  stroke-linecap: round;
+}
+
+/* --- Enter / exit animation states ---------------------------------------- */
+.ct-from-slide-down  { transform: translateY(-24px); opacity: 0; }
+.ct-from-slide-up    { transform: translateY(24px);  opacity: 0; }
+.ct-from-slide-left  { transform: translateX(24px);  opacity: 0; } /* enters from the right */
+.ct-from-slide-right { transform: translateX(-24px); opacity: 0; } /* enters from the left */
+.ct-from-fade        { opacity: 0; }
+.ct-from-scale       { transform: scale(0.9); opacity: 0; }
+
+.ct-leaving { overflow: hidden; }
+.ct-out-slide-up    { transform: translateY(-24px) !important; opacity: 0 !important; }
+.ct-out-slide-down  { transform: translateY(24px)  !important; opacity: 0 !important; }
+.ct-out-slide-left  { transform: translateX(-110%) !important; opacity: 0 !important; }
+.ct-out-slide-right { transform: translateX(110%)  !important; opacity: 0 !important; }
+.ct-out-fade        { opacity: 0 !important; }
+.ct-out-scale       { transform: scale(0.9) !important; opacity: 0 !important; }
+
+/* --- Swipe interaction states --------------------------------------------- */
+.ct-toast.ct-swiping { transition: none; cursor: grabbing; user-select: none; }
+.ct-toast.ct-snap-back { transition: transform 180ms ease, opacity 180ms ease; }
+
+/* --- Reduced motion: opacity-only, no movement ---------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ct-toast {
+    transition: opacity 1ms linear, max-height 1ms linear, margin 1ms linear !important;
+  }
+  .ct-from-slide-down, .ct-from-slide-up, .ct-from-slide-left, .ct-from-slide-right,
+  .ct-out-slide-up, .ct-out-slide-down, .ct-out-slide-left, .ct-out-slide-right,
+  .ct-from-scale, .ct-out-scale {
+    transform: none !important;
+  }
+  .ct-progress-bar { transition: none !important; }
+  .ct-toast.ct-snap-back { transition: none; }
+}
+
+/* --- High-contrast / forced-colors ---------------------------------------- */
+@media (forced-colors: active) {
+  .ct-toast { border: 1px solid CanvasText; }
+  .ct-action, .ct-close { border: 1px solid ButtonText; }
+  .ct-action:focus-visible, .ct-close:focus-visible { outline: 2px solid Highlight; }
+  .ct-progress-bar { background: Highlight; }
+}
+
+/* --- Mobile: comfortable full-width sheets --------------------------------- */
+@media (max-width: 480px) {
+  .ct-container {
+    width: auto;
+    max-width: none;
+    left: calc(env(safe-area-inset-left) + 0.5rem) !important;
+    right: calc(env(safe-area-inset-right) + 0.5rem) !important;
+    transform: none !important;
+    align-items: stretch;
+  }
+  .ct-toast { max-height: min(calc(100vh - 1.5rem), 70vh); }
+}

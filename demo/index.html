@@ -68,6 +68,77 @@
       </section>
 
       <section class="demo-section">
+        <h2>Toasts — variants &amp; basics</h2>
+        <div class="demo-toolbar">
+          <label for="toast-position">Position</label>
+          <select id="toast-position">
+            <option value="top-left">top-left</option>
+            <option value="top-center">top-center</option>
+            <option value="top-right" selected>top-right</option>
+            <option value="bottom-left">bottom-left</option>
+            <option value="bottom-center">bottom-center</option>
+            <option value="bottom-right">bottom-right</option>
+          </select>
+          <label for="toast-overflow">Overflow</label>
+          <select id="toast-overflow">
+            <option value="queue" selected>queue</option>
+            <option value="dismiss-oldest">dismiss-oldest</option>
+            <option value="dismiss-newest">dismiss-newest</option>
+          </select>
+          <label for="toast-max">Max visible</label>
+          <input id="toast-max" type="number" min="1" max="9" value="5" style="width:4rem" />
+        </div>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="toast-info">Info</button>
+          <button class="demo-btn" data-demo="toast-success">Success: edits saved</button>
+          <button class="demo-btn" data-demo="toast-warning">Warning</button>
+          <button class="demo-btn" data-demo="toast-danger">Danger / error</button>
+          <button class="demo-btn" data-demo="toast-neutral">Neutral</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Toasts — timing &amp; behaviour</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="toast-auto">Auto-dismiss (4s)</button>
+          <button class="demo-btn" data-demo="toast-custom-duration">Custom duration (1.5s)</button>
+          <button class="demo-btn" data-demo="toast-persistent">Persistent (connection lost)</button>
+          <button class="demo-btn" data-demo="toast-progress">Progress indicator</button>
+          <button class="demo-btn" data-demo="toast-no-close">No close button</button>
+          <button class="demo-btn" data-demo="toast-stack">Stack 5 quickly</button>
+          <button class="demo-btn" data-demo="toast-overflow">Overflow demo (8)</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Toasts — updates &amp; actions</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="toast-autosave">Autosave (loading → success)</button>
+          <button class="demo-btn" data-demo="toast-autosave-fail">Autosave (loading → failure)</button>
+          <button class="demo-btn" data-demo="toast-dedup">Duplicate-ID update</button>
+          <button class="demo-btn" data-demo="toast-undo">Undo action</button>
+          <button class="demo-btn" data-demo="toast-async-action">Async action</button>
+          <button class="demo-btn" data-demo="toast-action-error">Action: simulated server error</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Toasts — content, motion &amp; coexistence</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="toast-long-title">Long title</button>
+          <button class="demo-btn" data-demo="toast-long-message">Long message / URL</button>
+          <button class="demo-btn" data-demo="toast-swipe">Swipe-to-dismiss (touch)</button>
+          <button class="demo-btn" data-demo="toast-coexist">Toast + modal together</button>
+          <button class="demo-btn" data-demo="toast-close-all">Close all toasts</button>
+        </div>
+        <p class="demo-note">
+          Reduced motion, dark mode, and the custom theme above all apply to toasts
+          too. On a phone-width screen toasts become full-width sheets that respect
+          safe-area insets. Swipe horizontally on a touch device to dismiss.
+        </p>
+      </section>
+
+      <section class="demo-section">
         <h2>Result log</h2>
         <pre id="log" class="demo-log" aria-live="polite"></pre>
       </section>

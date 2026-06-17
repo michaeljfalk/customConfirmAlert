@@ -9,73 +9,14 @@ import {
   setContent,
   scrollLock,
   isPromise,
-  svgEl,
 } from './utils.js';
+import { buildVariantIcon as buildIcon, buildSpinner, buildCloseIcon } from './icons.js';
 
 /** @typedef {'info' | 'success' | 'warning' | 'danger'} Variant */
 /** @typedef {'alert' | 'confirm' | 'prompt'} DialogType */
 /** @typedef {'confirm' | 'cancel' | 'input' | 'none'} DefaultFocus */
 
 const VARIANTS = new Set(['info', 'success', 'warning', 'danger']);
-
-/**
- * Build a built-in icon for a variant using DOM (no innerHTML).
- * @param {Variant} variant
- * @returns {SVGElement}
- */
-function buildIcon(variant) {
-  const common = {
-    viewBox: '0 0 24 24',
-    width: 24,
-    height: 24,
-    fill: 'none',
-    stroke: 'currentColor',
-    'stroke-width': 2,
-    'stroke-linecap': 'round',
-    'stroke-linejoin': 'round',
-    'aria-hidden': 'true',
-    focusable: 'false',
-  };
-  /** @type {Record<Variant, SVGElement[]>} */
-  const glyphs = {
-    info: [
-      svgEl('circle', { cx: 12, cy: 12, r: 10 }),
-      svgEl('line', { x1: 12, y1: 11, x2: 12, y2: 16 }),
-      svgEl('line', { x1: 12, y1: 8, x2: 12.01, y2: 8 }),
-    ],
-    success: [
-      svgEl('circle', { cx: 12, cy: 12, r: 10 }),
-      svgEl('path', { d: 'M8 12.5l2.5 2.5 5-5' }),
-    ],
-    warning: [
-      svgEl('path', { d: 'M10.29 3.86l-8.18 14A1.5 1.5 0 003.4 20h17.2a1.5 1.5 0 001.29-2.14l-8.18-14a1.5 1.5 0 00-2.62 0z' }),
-      svgEl('line', { x1: 12, y1: 9, x2: 12, y2: 13 }),
-      svgEl('line', { x1: 12, y1: 17, x2: 12.01, y2: 17 }),
-    ],
-    danger: [
-      svgEl('circle', { cx: 12, cy: 12, r: 10 }),
-      svgEl('line', { x1: 15, y1: 9, x2: 9, y2: 15 }),
-      svgEl('line', { x1: 9, y1: 9, x2: 15, y2: 15 }),
-    ],
-  };
-  return svgEl('svg', common, glyphs[variant] || glyphs.info);
-}
-
-/** Small inline spinner shown on buttons during async work. */
-function buildSpinner() {
-  return svgEl(
-    'svg',
-    {
-      class: 'cd-spinner',
-      viewBox: '0 0 24 24',
-      width: 18,
-      height: 18,
-      'aria-hidden': 'true',
-      focusable: 'false',
-    },
-    [svgEl('circle', { cx: 12, cy: 12, r: 9, fill: 'none', 'stroke-width': 3 })],
-  );
-}
 
 /**
  * One modal dialog. Construct, call {@link Dialog#open}, await the returned
@@ -234,13 +175,7 @@ export class Dialog {
       close.type = 'button';
       close.className = 'cd-close';
       close.setAttribute('aria-label', o.closeLabel || 'Close');
-      close.appendChild(
-        svgEl(
-          'svg',
-          { viewBox: '0 0 24 24', width: 20, height: 20, fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'aria-hidden': 'true', focusable: 'false' },
-          [svgEl('line', { x1: 6, y1: 6, x2: 18, y2: 18 }), svgEl('line', { x1: 18, y1: 6, x2: 6, y2: 18 })],
-        ),
-      );
+      close.appendChild(buildCloseIcon(20));
       close.addEventListener('click', () => this.cancel());
       dialog.appendChild(close);
       this.els.close = close;
