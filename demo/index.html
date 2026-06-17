@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-cd-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>customConfirmAlert — demo</title>
+    <!-- The component's stylesheet (separate, themeable file). -->
+    <link rel="stylesheet" href="../src/custom-dialog.css" />
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <header class="demo-header">
+      <div class="demo-header-inner">
+        <div>
+          <h1>customConfirmAlert</h1>
+          <p class="demo-tagline">
+            Dependency-free, accessible, themeable alert / confirm / prompt dialogs.
+          </p>
+        </div>
+        <div class="demo-controls">
+          <label for="theme">Theme</label>
+          <select id="theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="auto">Auto (system)</option>
+            <option value="brand">Custom brand</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main class="demo-main">
+      <section class="demo-section">
+        <h2>Alerts</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="alert-info">Basic alert</button>
+          <button class="demo-btn" data-demo="alert-success">Success alert</button>
+          <button class="demo-btn" data-demo="alert-warning">Warning alert</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Confirmations</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="confirm-danger">Destructive confirm</button>
+          <button class="demo-btn" data-demo="confirm-safe">Safe confirm</button>
+          <button class="demo-btn" data-demo="confirm-async">Async confirm (success)</button>
+          <button class="demo-btn" data-demo="confirm-error">Async confirm (server error)</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Prompts</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="prompt">Prompt</button>
+          <button class="demo-btn" data-demo="prompt-validate">Prompt with validation</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Behaviour</h2>
+        <div class="demo-grid">
+          <button class="demo-btn" data-demo="queue">Queue (3 in a row)</button>
+          <button class="demo-btn" data-demo="long">Long content (wrapping)</button>
+          <button class="demo-btn" data-demo="rich">Rich DOM content</button>
+        </div>
+      </section>
+
+      <section class="demo-section">
+        <h2>Result log</h2>
+        <pre id="log" class="demo-log" aria-live="polite"></pre>
+      </section>
+
+      <p class="demo-note">
+        Tip: resize the window to a phone width to see the mobile sheet layout,
+        and try keyboard-only navigation (Tab / Shift+Tab / Esc / Enter).
+      </p>
+    </main>
+
+    <script type="module" src="./demo.js"></script>
+  </body>
+</html>

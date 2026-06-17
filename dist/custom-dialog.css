@@ -1,0 +1,372 @@
+/**
+ * customConfirmAlert — styles
+ * -----------------------------------------------------------------------------
+ * Every meaningful value is a CSS custom property so projects can theme without
+ * touching JS. Override on :root, a wrapper, or per-dialog via `className`.
+ * No dependency on Bootstrap / Tailwind / Material / any design system.
+ */
+
+:root {
+  --custom-dialog-font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --custom-dialog-backdrop: rgb(0 0 0 / 0.5);
+  --custom-dialog-background: #ffffff;
+  --custom-dialog-text: #172033;
+  --custom-dialog-muted-text: #667085;
+  --custom-dialog-border: #e4e7ec;
+  --custom-dialog-border-radius: 14px;
+  --custom-dialog-shadow: 0 24px 70px rgb(0 0 0 / 0.25);
+  --custom-dialog-primary: #2563eb;
+  --custom-dialog-primary-text: #ffffff;
+  --custom-dialog-danger: #dc2626;
+  --custom-dialog-warning: #d97706;
+  --custom-dialog-success: #15803d;
+  --custom-dialog-info: #2563eb;
+  --custom-dialog-focus-ring: #3b82f6;
+  --custom-dialog-max-width: 32rem;
+  --custom-dialog-z-index: 10000;
+
+  --custom-dialog-padding: 1.5rem;
+  --custom-dialog-gap: 0.75rem;
+  --custom-dialog-btn-radius: 9px;
+  --custom-dialog-input-bg: #ffffff;
+  --custom-dialog-input-border: #cbd2dc;
+  --custom-dialog-error-text: #b42318;
+  --custom-dialog-neutral-btn-bg: #f2f4f7;
+  --custom-dialog-neutral-btn-text: #344054;
+  --custom-dialog-anim-duration: 160ms;
+}
+
+/* Automatic dark mode (only when a project hasn't forced a scheme). */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --custom-dialog-backdrop: rgb(0 0 0 / 0.65);
+    --custom-dialog-background: #1d2433;
+    --custom-dialog-text: #f3f6fb;
+    --custom-dialog-muted-text: #98a2b3;
+    --custom-dialog-border: #344054;
+    --custom-dialog-shadow: 0 24px 70px rgb(0 0 0 / 0.55);
+    --custom-dialog-input-bg: #141a26;
+    --custom-dialog-input-border: #475467;
+    --custom-dialog-neutral-btn-bg: #2a3344;
+    --custom-dialog-neutral-btn-text: #e4e7ec;
+    --custom-dialog-error-text: #fda29b;
+  }
+}
+
+/* Opt-in explicit themes (override prefers-color-scheme). */
+[data-cd-theme='light'] {
+  --custom-dialog-background: #ffffff;
+  --custom-dialog-text: #172033;
+  --custom-dialog-muted-text: #667085;
+  --custom-dialog-border: #e4e7ec;
+  --custom-dialog-input-bg: #ffffff;
+  --custom-dialog-input-border: #cbd2dc;
+  --custom-dialog-neutral-btn-bg: #f2f4f7;
+  --custom-dialog-neutral-btn-text: #344054;
+  --custom-dialog-error-text: #b42318;
+}
+[data-cd-theme='dark'] {
+  --custom-dialog-backdrop: rgb(0 0 0 / 0.65);
+  --custom-dialog-background: #1d2433;
+  --custom-dialog-text: #f3f6fb;
+  --custom-dialog-muted-text: #98a2b3;
+  --custom-dialog-border: #344054;
+  --custom-dialog-shadow: 0 24px 70px rgb(0 0 0 / 0.55);
+  --custom-dialog-input-bg: #141a26;
+  --custom-dialog-input-border: #475467;
+  --custom-dialog-neutral-btn-bg: #2a3344;
+  --custom-dialog-neutral-btn-text: #e4e7ec;
+  --custom-dialog-error-text: #fda29b;
+}
+
+/* --- Root / backdrop -------------------------------------------------------- */
+.cd-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--custom-dialog-z-index);
+  font-family: var(--custom-dialog-font-family);
+}
+.cd-root[hidden] {
+  display: none;
+}
+
+.cd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--custom-dialog-backdrop);
+  animation: cd-fade var(--custom-dialog-anim-duration) ease-out;
+}
+
+.cd-viewport {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Keep clear of the on-screen keyboard / notches on mobile. */
+  padding: max(1rem, env(safe-area-inset-top))
+           max(1rem, env(safe-area-inset-right))
+           max(1rem, env(safe-area-inset-bottom))
+           max(1rem, env(safe-area-inset-left));
+  overflow-y: auto;
+}
+
+/* --- Dialog ----------------------------------------------------------------- */
+.cd-dialog {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 1rem;
+  width: 100%;
+  max-width: var(--custom-dialog-max-width);
+  margin: auto;
+  padding: var(--custom-dialog-padding);
+  background: var(--custom-dialog-background);
+  color: var(--custom-dialog-text);
+  border-radius: var(--custom-dialog-border-radius);
+  box-shadow: var(--custom-dialog-shadow);
+  box-sizing: border-box;
+  animation: cd-pop var(--custom-dialog-anim-duration) cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cd-dialog:focus {
+  outline: none;
+}
+
+.cd-icon {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: var(--custom-dialog-info);
+}
+.cd-icon > svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.cd-variant-success .cd-icon { color: var(--custom-dialog-success); }
+.cd-variant-warning .cd-icon { color: var(--custom-dialog-warning); }
+.cd-variant-danger  .cd-icon { color: var(--custom-dialog-danger); }
+.cd-variant-info    .cd-icon { color: var(--custom-dialog-info); }
+
+/* When the icon is hidden, let content span the full width. */
+.cd-dialog > .cd-content:first-child,
+.cd-dialog > .cd-content:nth-child(1):last-of-type {
+  grid-column: 1 / -1;
+}
+.cd-dialog:not(:has(.cd-icon)) .cd-content {
+  grid-column: 1 / -1;
+}
+
+.cd-content {
+  grid-column: 2;
+  min-width: 0; /* allow text to wrap inside the grid */
+}
+
+.cd-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.125rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--custom-dialog-text);
+  overflow-wrap: anywhere;
+}
+
+.cd-message {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--custom-dialog-muted-text);
+  overflow-wrap: anywhere;
+}
+.cd-message p { margin: 0 0 0.5rem; }
+.cd-message p:last-child { margin-bottom: 0; }
+
+/* --- Prompt input ----------------------------------------------------------- */
+.cd-field {
+  margin-top: 1rem;
+}
+.cd-input-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--custom-dialog-text);
+}
+.cd-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  font-size: 1rem; /* >=16px avoids iOS zoom-on-focus */
+  color: var(--custom-dialog-text);
+  background: var(--custom-dialog-input-bg);
+  border: 1px solid var(--custom-dialog-input-border);
+  border-radius: var(--custom-dialog-btn-radius);
+}
+.cd-input:focus-visible {
+  outline: 2px solid var(--custom-dialog-focus-ring);
+  outline-offset: 1px;
+  border-color: var(--custom-dialog-focus-ring);
+}
+
+/* --- Error ------------------------------------------------------------------ */
+.cd-error {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--custom-dialog-error-text);
+  overflow-wrap: anywhere;
+}
+.cd-error[hidden] { display: none; }
+
+/* --- Close (x) -------------------------------------------------------------- */
+.cd-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: var(--custom-dialog-muted-text);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.cd-close:hover { background: var(--custom-dialog-neutral-btn-bg); }
+.cd-close:focus-visible {
+  outline: 2px solid var(--custom-dialog-focus-ring);
+  outline-offset: 1px;
+}
+.cd-close[disabled] { opacity: 0.5; cursor: default; }
+
+/* --- Footer / buttons ------------------------------------------------------- */
+.cd-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--custom-dialog-gap);
+  margin-top: 1.5rem;
+}
+
+.cd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 5.5rem;
+  padding: 0.6rem 1.1rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  border-radius: var(--custom-dialog-btn-radius);
+  cursor: pointer;
+  transition: filter var(--custom-dialog-anim-duration) ease,
+              background-color var(--custom-dialog-anim-duration) ease;
+}
+.cd-btn:focus-visible {
+  outline: 2px solid var(--custom-dialog-focus-ring);
+  outline-offset: 2px;
+}
+.cd-btn[disabled] {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.cd-btn-cancel {
+  background: var(--custom-dialog-neutral-btn-bg);
+  color: var(--custom-dialog-neutral-btn-text);
+}
+.cd-btn-cancel:not([disabled]):hover { filter: brightness(0.96); }
+
+.cd-btn-confirm { color: var(--custom-dialog-primary-text); }
+.cd-btn-confirm:not([disabled]):hover { filter: brightness(1.06); }
+
+.cd-btn-info,
+.cd-btn-confirm { background: var(--custom-dialog-primary); }
+.cd-btn-success { background: var(--custom-dialog-success); }
+.cd-btn-warning { background: var(--custom-dialog-warning); }
+.cd-btn-danger  { background: var(--custom-dialog-danger); }
+
+/* --- Spinner / loading ------------------------------------------------------ */
+.cd-spinner {
+  animation: cd-spin 0.7s linear infinite;
+}
+.cd-spinner circle {
+  stroke: currentColor;
+  stroke-dasharray: 42;
+  stroke-dashoffset: 14;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.cd-is-loading { cursor: progress; }
+
+/* --- Utilities -------------------------------------------------------------- */
+.cd-visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* --- Animations ------------------------------------------------------------- */
+@keyframes cd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cd-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cd-spin { to { transform: rotate(360deg); } }
+
+/* Respect reduced-motion: no entrance animation or spinner rotation. */
+@media (prefers-reduced-motion: reduce) {
+  .cd-backdrop,
+  .cd-dialog,
+  .cd-spinner {
+    animation: none !important;
+  }
+  .cd-btn { transition: none; }
+}
+
+/* High-contrast / forced-colors: ensure visible structure and focus. */
+@media (forced-colors: active) {
+  .cd-dialog {
+    border: 1px solid CanvasText;
+  }
+  .cd-btn {
+    border: 1px solid ButtonText;
+  }
+  .cd-btn:focus-visible,
+  .cd-input:focus-visible,
+  .cd-close:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}
+
+/* --- Small screens ---------------------------------------------------------- */
+@media (max-width: 480px) {
+  .cd-viewport {
+    align-items: flex-end;
+  }
+  .cd-dialog {
+    max-width: 100%;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .cd-footer {
+    flex-direction: column-reverse;
+  }
+  .cd-btn {
+    width: 100%;
+  }
+}

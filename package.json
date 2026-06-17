@@ -1,0 +1,74 @@
+{
+  "name": "customconfirmalert",
+  "version": "1.0.0",
+  "description": "Reusable, framework-agnostic, dependency-free Promise-based alert/confirm/prompt dialogs. A polished, accessible, themeable replacement for the visual role of window.alert/confirm/prompt — without overriding them.",
+  "type": "module",
+  "main": "./dist/custom-dialog.cjs",
+  "module": "./dist/custom-dialog.esm.js",
+  "types": "./types/index.d.ts",
+  "browser": "./dist/custom-dialog.global.js",
+  "unpkg": "./dist/custom-dialog.global.min.js",
+  "jsdelivr": "./dist/custom-dialog.global.min.js",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/custom-dialog.esm.js",
+      "require": "./dist/custom-dialog.cjs",
+      "default": "./dist/custom-dialog.esm.js"
+    },
+    "./css": "./dist/custom-dialog.css",
+    "./custom-dialog.css": "./dist/custom-dialog.css",
+    "./global": "./dist/custom-dialog.global.js",
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist",
+    "src",
+    "types",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "alert",
+    "confirm",
+    "prompt",
+    "dialog",
+    "modal",
+    "confirmation",
+    "accessible",
+    "a11y",
+    "promise",
+    "vanilla",
+    "framework-agnostic",
+    "no-dependencies",
+    "themeable"
+  ],
+  "author": "Michael Falk <michael@co-pilot.ca>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michaeljfalk/customConfirmAlert.git"
+  },
+  "bugs": {
+    "url": "https://github.com/michaeljfalk/customConfirmAlert/issues"
+  },
+  "homepage": "https://github.com/michaeljfalk/customConfirmAlert#readme",
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "jsdom": "^25.0.0",
+    "vitest": "^2.1.0"
+  }
+}
