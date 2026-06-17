@@ -1,6 +1,6 @@
 {
   "name": "customconfirmalert",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Reusable, framework-agnostic, dependency-free Promise-based alert/confirm/prompt dialogs. A polished, accessible, themeable replacement for the visual role of window.alert/confirm/prompt — without overriding them.",
   "type": "module",
   "main": "./dist/custom-dialog.cjs",

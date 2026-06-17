@@ -1,4 +1,4 @@
-/*! customConfirmAlert v1.1.1 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
+/*! customConfirmAlert v1.2.0 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
 
 // src/utils.js
 var FOCUSABLE_SELECTOR = [
@@ -300,6 +300,19 @@ function buildCloseIcon(size = 20) {
 
 // src/dialog.js
 var VARIANTS = /* @__PURE__ */ new Set(["info", "success", "warning", "danger"]);
+function choiceButtonClass(variant) {
+  switch (variant) {
+    case "primary":
+      return "cd-btn-primary";
+    case "danger":
+      return "cd-btn-danger";
+    case "secondary":
+      return "cd-btn-secondary";
+    case "neutral":
+    default:
+      return "cd-btn-neutral";
+  }
+}
 var Dialog = class {
   /**
    * @param {object} options - Normalised options (see normalizeOptions in index.js).
@@ -425,26 +438,30 @@ var Dialog = class {
     }
     const footer = document.createElement("div");
     footer.className = "cd-footer";
-    if (o.type !== "alert") {
-      const cancelBtn = document.createElement("button");
-      cancelBtn.type = "button";
-      cancelBtn.className = "cd-btn cd-btn-cancel";
-      cancelBtn.textContent = o.cancelText;
-      cancelBtn.addEventListener("click", () => this.cancel());
-      footer.appendChild(cancelBtn);
-      this.els.cancelBtn = cancelBtn;
+    if (o.type === "choice") {
+      this.buildChoiceButtons(footer);
+    } else {
+      if (o.type !== "alert") {
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "cd-btn cd-btn-cancel";
+        cancelBtn.textContent = o.cancelText;
+        cancelBtn.addEventListener("click", () => this.cancel());
+        footer.appendChild(cancelBtn);
+        this.els.cancelBtn = cancelBtn;
+      }
+      const confirmBtn = document.createElement("button");
+      confirmBtn.type = "button";
+      confirmBtn.className = `cd-btn cd-btn-confirm cd-btn-${o.variant}`;
+      const confirmLabel = document.createElement("span");
+      confirmLabel.className = "cd-btn-label";
+      confirmLabel.textContent = o.confirmText;
+      confirmBtn.appendChild(confirmLabel);
+      confirmBtn.addEventListener("click", () => this.submit());
+      footer.appendChild(confirmBtn);
+      this.els.confirmBtn = confirmBtn;
+      this.els.confirmLabel = confirmLabel;
     }
-    const confirmBtn = document.createElement("button");
-    confirmBtn.type = "button";
-    confirmBtn.className = `cd-btn cd-btn-confirm cd-btn-${o.variant}`;
-    const confirmLabel = document.createElement("span");
-    confirmLabel.className = "cd-btn-label";
-    confirmLabel.textContent = o.confirmText;
-    confirmBtn.appendChild(confirmLabel);
-    confirmBtn.addEventListener("click", () => this.submit());
-    footer.appendChild(confirmBtn);
-    this.els.confirmBtn = confirmBtn;
-    this.els.confirmLabel = confirmLabel;
     dialog.appendChild(footer);
     viewport.appendChild(dialog);
     this.root.textContent = "";
@@ -456,8 +473,41 @@ var Dialog = class {
     this.els.error = error;
     this.els.footer = footer;
   }
+  /**
+   * Render the N footer buttons for a {@link customChoice} dialog, in array
+   * order. Each resolves the dialog with its own `value`.
+   * @param {HTMLElement} footer
+   */
+  buildChoiceButtons(footer) {
+    this.els.choiceButtons = [];
+    this.els.choiceByValue = /* @__PURE__ */ new Map();
+    for (const b of this.options.buttons) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `cd-btn ${choiceButtonClass(b.variant)}`;
+      btn.textContent = b.text;
+      btn.setAttribute("data-cd-value", String(b.value));
+      if (b.role === "cancel") {
+        btn.setAttribute("data-cd-role", "cancel");
+        this.els.choiceCancelBtn = btn;
+      }
+      btn.addEventListener("click", () => this.choose(b.value));
+      footer.appendChild(btn);
+      this.els.choiceButtons.push({ el: btn, value: b.value });
+      this.els.choiceByValue.set(b.value, btn);
+    }
+  }
+  /**
+   * Resolve a choice dialog with the clicked button's value.
+   * @param {string} value
+   */
+  choose(value) {
+    if (this.settled || this.pending) return;
+    this.close(value);
+  }
   /** @returns {HTMLElement | null} The element to focus on open. */
   getInitialFocus() {
+    if (this.type === "choice") return this.getChoiceInitialFocus();
     switch (this.options.defaultFocus) {
       case "input":
         return this.els.input || this.els.confirmBtn;
@@ -471,6 +521,21 @@ var Dialog = class {
         return this.els.confirmBtn;
     }
   }
+  /**
+   * Initial focus for a choice dialog: the button whose `value` matches
+   * `defaultFocus`, else the role:'cancel' button, else the last button.
+   * @returns {HTMLElement | null}
+   */
+  getChoiceInitialFocus() {
+    const df = this.options.defaultFocus;
+    if (df && df !== "cancel") {
+      const byValue = this.els.choiceByValue.get(df);
+      if (byValue) return byValue;
+    }
+    if (this.els.choiceCancelBtn) return this.els.choiceCancelBtn;
+    const buttons = this.els.choiceButtons;
+    return buttons.length ? buttons[buttons.length - 1].el : this.els.dialog;
+  }
   /** @param {KeyboardEvent} e */
   handleKeydown(e) {
     if (e.key === "Escape") {
@@ -481,6 +546,7 @@ var Dialog = class {
       return;
     }
     if (e.key === "Enter") {
+      if (this.type === "choice") return;
       const target = (
         /** @type {HTMLElement} */
         e.target
@@ -504,6 +570,7 @@ var Dialog = class {
   }
   /** @returns {any} The resolution value for a cancellation. */
   cancelValue() {
+    if (this.type === "choice") return this.options.hasCancel ? this.options.cancelValue : null;
     if (this.type === "confirm") return false;
     if (this.type === "prompt") return null;
     return void 0;
@@ -601,7 +668,14 @@ var Dialog = class {
     scrollLock.unlock();
     const resolve = this._resolve;
     this._resolve = null;
+    const onClose = this.options.onClose;
     this.els = {};
+    if (typeof onClose === "function") {
+      try {
+        onClose(value);
+      } catch (_) {
+      }
+    }
     if (resolve) resolve(value);
   }
 };
@@ -1717,6 +1791,62 @@ function customConfirm(options) {
 function customPrompt(options) {
   return show("prompt", options);
 }
+function normalizeChoiceOptions(input) {
+  var _a, _b, _c, _d;
+  const raw = input && typeof input === "object" ? input : {};
+  const buttons = Array.isArray(raw.buttons) ? raw.buttons : [];
+  if (buttons.length === 0) {
+    throw new Error("customChoice requires at least one button in `buttons`.");
+  }
+  let hasCancel = false;
+  let cancelValue = null;
+  const normButtons = buttons.map((b) => {
+    const isCancel = b && b.role === "cancel";
+    if (isCancel) {
+      if (hasCancel) {
+        throw new Error("customChoice allows at most one button with role:'cancel'.");
+      }
+      hasCancel = true;
+      cancelValue = b.value;
+    }
+    return {
+      value: b.value,
+      text: b && b.text != null ? String(b.text) : "",
+      variant: b && b.variant,
+      role: isCancel ? "cancel" : void 0
+    };
+  });
+  const variant = VARIANTS.has(raw.variant) ? raw.variant : SHARED_DEFAULTS.variant;
+  return {
+    type: "choice",
+    title: raw.title || "",
+    message: raw.message || "",
+    variant,
+    icon: raw.icon,
+    dismissible: (_a = raw.dismissible) != null ? _a : SHARED_DEFAULTS.dismissible,
+    closeOnEscape: (_b = raw.closeOnEscape) != null ? _b : SHARED_DEFAULTS.closeOnEscape,
+    closeOnBackdrop: (_c = raw.closeOnBackdrop) != null ? _c : SHARED_DEFAULTS.closeOnBackdrop,
+    allowHtml: (_d = raw.allowHtml) != null ? _d : SHARED_DEFAULTS.allowHtml,
+    className: raw.className || "",
+    ariaLabel: raw.ariaLabel,
+    closeLabel: raw.closeLabel,
+    onClose: raw.onClose,
+    buttons: normButtons,
+    hasCancel,
+    cancelValue,
+    // A button `value` or the literal 'cancel'; resolved in Dialog at focus time.
+    defaultFocus: raw.defaultFocus
+  };
+}
+function customChoice(options) {
+  const normalized = normalizeChoiceOptions(options);
+  return dialogQueue.enqueue(async () => {
+    await whenBodyReady();
+    const root = ensureRoot();
+    const dialog = new Dialog(normalized, root);
+    return dialog.open();
+  });
+}
 function customToast(options) {
   return toastManager.create(options);
 }
@@ -1737,6 +1867,7 @@ var CustomDialog = {
   alert: customAlert,
   confirm: customConfirm,
   prompt: customPrompt,
+  choose: customChoice,
   /** @returns {number} Dialogs currently waiting in the queue. */
   get queueSize() {
     return dialogQueue.size;
@@ -1755,6 +1886,7 @@ export {
   closeToast,
   configureToasts,
   customAlert,
+  customChoice,
   customConfirm,
   customPrompt,
   customToast,

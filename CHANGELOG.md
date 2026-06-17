@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [1.2.0] — 2026-06-17
+
+### Added — Multi-button dialogs (`customChoice`)
+A new modal primitive for decisions that don't reduce to true/false (e.g. the
+macOS-style **Save / Don't Save / Cancel**). Purely additive — the behavior,
+signatures, and return values of `customAlert` / `customConfirm` / `customPrompt`
+are unchanged.
+
+- **API:** `customChoice(options): Promise<string|null>`, also exposed as
+  `CustomDialog.choose`. Resolves the clicked button's `value`.
+- **Buttons:** `buttons: Array<{ value, text, variant?, role? }>` rendered in
+  order. `variant` is `'primary' | 'danger' | 'neutral' | 'secondary'` (default
+  `neutral`) and reuses the existing button styling. At least one button is
+  required; an empty `buttons` array throws synchronously.
+- **Dismissal:** a single `role: 'cancel'` button is what Escape / the × /
+  a backdrop click resolve to (and it gets the safe default focus). With no
+  cancel button, dismissing resolves `null`. `customChoice` never rejects.
+- **Focus:** `defaultFocus` accepts a button `value` or `'cancel'`; defaults to
+  the cancel button, else the last button. Full focus trap over all buttons and
+  focus restoration to the opener, shared with the existing dialogs.
+- **Reused machinery:** the singleton queue, page `inert`, ARIA
+  (`role="dialog"`, `aria-modal`, labelledby/describedby), reduced-motion, and
+  the open/close lifecycle are all shared with the existing dialogs.
+- **`onClose(value)`** hook fired once when the dialog closes.
+- **CSS:** new `.cd-btn-primary` / `.cd-btn-neutral` / `.cd-btn-secondary`
+  button variants built from the existing `--custom-dialog-*` tokens (no new
+  tokens, no auto-injected stylesheet).
+- **Types:** `customChoice`, `CustomDialog.choose`, `ChoiceOptions`, and
+  `ChoiceButton` added to the declarations.
+
+### Added — earlier (previously unreleased)
 - `examples/toasts.html` — a standalone, `file://`-openable toast example covering
   variants, positions, timing, in-place updates, actions, and overflow.
 - This `CHANGELOG.md`.
