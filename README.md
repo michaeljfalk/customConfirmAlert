@@ -32,6 +32,7 @@ A small, polished, **accessible**, **themeable**, **dependency-free** UI primiti
 - [API reference](#api-reference)
 - [Options](#options)
 - [Return values](#return-values)
+- [Multiple buttons (`customChoice`)](#multiple-buttons-customchoice)
 - [Async callback behaviour](#async-callback-behaviour)
 - [Queue behaviour](#queue-behaviour)
 - [Theming](#theming)
@@ -151,6 +152,7 @@ await customConfirm({ title: 'Proceed?' }); // identical
 | `customAlert` | `customAlert(options): Promise<void>` | `undefined` when dismissed |
 | `customConfirm` | `customConfirm(options): Promise<boolean>` | `true` confirmed / `false` cancelled |
 | `customPrompt` | `customPrompt(options): Promise<string \| null>` | entered string / `null` cancelled |
+| `customChoice` | `customChoice(options): Promise<string \| null>` | the chosen button's `value` / `null` |
 
 `options` may be an **options object** or a **plain string** (treated as the `message`):
 
@@ -159,8 +161,8 @@ await customAlert('Saved!');                 // shorthand
 await customAlert({ message: 'Saved!' });    // equivalent
 ```
 
-`CustomDialog` mirrors these as `.alert` / `.confirm` / `.prompt`, plus a read-only
-`CustomDialog.queueSize`.
+`CustomDialog` mirrors these as `.alert` / `.confirm` / `.prompt` / `.choose`, plus a
+read-only `CustomDialog.queueSize`.
 
 ---
 
@@ -211,6 +213,79 @@ customPrompt(options):  Promise<string | null>
 
 Cancelling (Escape, cancel button, close ×, or an enabled backdrop click) resolves
 `undefined` (alert), `false` (confirm), or `null` (prompt) — it **never rejects**.
+
+---
+
+## Multiple buttons (`customChoice`)
+
+`customConfirm()` can only ever answer **yes/no** — its Promise resolves `true` or
+`false`. When a decision has **three or more** outcomes (the classic macOS
+**Save / Don't Save / Cancel**), use `customChoice()`: it renders an arbitrary set
+of buttons and resolves **which one** was chosen.
+
+> [!NOTE]
+> `customChoice` is **purely additive**. It does not change `customAlert`,
+> `customConfirm`, or `customPrompt` in any way — `customConfirm` still resolves a
+> boolean. Reach for `customChoice` only when a boolean isn't enough.
+
+```js
+import { customChoice } from 'customconfirmalert';
+
+const choice = await customChoice({
+  title: 'Unsaved changes',
+  message: 'Do you want to save your changes before closing?',
+  variant: 'warning',
+  buttons: [
+    { value: 'save',    text: 'Save',       variant: 'primary' },
+    { value: 'discard', text: "Don't Save", variant: 'danger'  },
+    { value: 'cancel',  text: 'Cancel',     variant: 'neutral', role: 'cancel' },
+  ],
+});
+
+switch (choice) {
+  case 'save':    await save();  break;
+  case 'discard': close();       break;
+  case 'cancel':                 // also the value when Esc / × / backdrop dismiss
+  case null:      /* stay open, do nothing */ break;
+}
+```
+
+### Buttons
+
+`buttons` is an **array** rendered in order in the footer. At least one button is
+required — an empty array **throws synchronously**.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `value` | `string` | Resolved when the button is clicked. |
+| `text` | `string` | Button label. |
+| `variant` | `'primary' \| 'danger' \| 'neutral' \| 'secondary'` | Styling. Default `neutral`. `primary` → accent fill, `danger` → danger fill, `neutral`/`secondary` → muted. |
+| `role` | `'cancel'` | Marks the **dismiss** button (see below). At most one. |
+
+### Dismissal & the `cancel` role
+
+A single button may carry `role: 'cancel'`. That button is what **Escape**, the
+**× button**, and an **enabled backdrop click** resolve to, and it receives the safe
+default focus. If **no** button has `role: 'cancel'`, dismissing the dialog resolves
+**`null`**. `customChoice` **never rejects**.
+
+The usual gates apply: `closeOnEscape: false`, `closeOnBackdrop: false` (the default),
+and `dismissible: false` suppress those respective dismissal paths.
+
+### Focus
+
+`defaultFocus` accepts a button **`value`** or the literal **`'cancel'`**. It defaults
+to the `role: 'cancel'` button, or the **last** button when there is none. Focus is
+trapped across all buttons and restored to the opener on close — identical to the
+other dialogs.
+
+### Shared options
+
+`customChoice` accepts the shared dialog options — `title`, `message`, `variant`,
+`icon`, `allowHtml`, `dismissible`, `closeOnEscape`, `closeOnBackdrop`, `className`,
+`ariaLabel`, `closeLabel`, and an `onClose(value)` hook — and reuses the same queue,
+focus trap, page `inert`, ARIA wiring, and open/close lifecycle. The prompt-only and
+`onConfirm`/`validate` options do not apply.
 
 ---
 

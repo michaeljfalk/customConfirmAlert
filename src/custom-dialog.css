@@ -296,6 +296,28 @@
 .cd-btn-warning { background: var(--custom-dialog-warning); }
 .cd-btn-danger  { background: var(--custom-dialog-danger); }
 
+/* --- Choice (customChoice) button variants ---------------------------------
+   Multi-button dialogs reuse the dialog tokens. primary → filled accent,
+   danger → filled danger, neutral/secondary → the muted (cancel-like) style. */
+.cd-btn-primary {
+  color: var(--custom-dialog-primary-text);
+  background: var(--custom-dialog-primary);
+}
+.cd-btn-primary:not([disabled]):hover { filter: brightness(1.06); }
+
+/* Choice danger buttons are filled, so they need light text (the confirm
+   variant gets this via .cd-btn-confirm; standalone .cd-btn-danger needs it). */
+.cd-btn-danger { color: var(--custom-dialog-primary-text); }
+.cd-btn-danger:not([disabled]):hover { filter: brightness(1.06); }
+
+.cd-btn-neutral,
+.cd-btn-secondary {
+  background: var(--custom-dialog-neutral-btn-bg);
+  color: var(--custom-dialog-neutral-btn-text);
+}
+.cd-btn-neutral:not([disabled]):hover,
+.cd-btn-secondary:not([disabled]):hover { filter: brightness(0.96); }
+
 /* --- Spinner / loading ------------------------------------------------------ */
 .cd-spinner {
   animation: cd-spin 0.7s linear infinite;

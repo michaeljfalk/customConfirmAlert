@@ -67,6 +67,68 @@ export function customConfirm(options: DialogOptions | string): Promise<boolean>
 /** Prompt for a string. Resolves the entered value, or `null` if cancelled. */
 export function customPrompt(options: DialogOptions | string): Promise<string | null>;
 
+/** Visual style for a {@link ChoiceButton}. */
+export type ChoiceButtonVariant = 'primary' | 'danger' | 'neutral' | 'secondary';
+
+export interface ChoiceButton {
+  /** Value resolved by {@link customChoice} when this button is clicked. */
+  value: string;
+  /** Button label. */
+  text: string;
+  /** Styling. primary → accent, danger → filled danger, neutral/secondary → muted. Default: neutral. */
+  variant?: ChoiceButtonVariant;
+  /**
+   * Marks the dismiss button. Escape / the × / a backdrop click (where enabled)
+   * resolve to this button's value. At most one button may have this role.
+   */
+  role?: 'cancel';
+}
+
+export interface ChoiceOptions {
+  /** Heading; used as the dialog's accessible name (aria-labelledby). */
+  title?: string;
+  /** Body text, or a DOM Node / DocumentFragment for safe rich content. */
+  message?: string | Node;
+  /** Visual + semantic variant (drives the icon/accent). Default: "info". */
+  variant?: DialogVariant;
+  /** Custom icon (emoji/text string or DOM Node), or `false` to hide it. */
+  icon?: string | Node | false;
+  /** Render `title`/`message` strings as HTML. Caller MUST sanitise. Default: false. */
+  allowHtml?: boolean;
+  /** Show the close (×) button. Default: true. */
+  dismissible?: boolean;
+  /** Allow Escape to dismiss. Default: true. */
+  closeOnEscape?: boolean;
+  /** Allow a backdrop click to dismiss. Default: false. */
+  closeOnBackdrop?: boolean;
+  /** Extra class name added to the dialog element (per-dialog theming). */
+  className?: string;
+  /** Accessible name when no `title` is provided. */
+  ariaLabel?: string;
+  /** Accessible label for the close button. Default: "Close". */
+  closeLabel?: string;
+  /** Called once with the resolved value when the dialog closes. */
+  onClose?: (value: string | null) => void;
+  /** The footer buttons, rendered in order. At least one is required. */
+  buttons: ChoiceButton[];
+  /**
+   * Which button receives initial focus: a button `value`, or 'cancel'.
+   * Default: the role:'cancel' button, else the last button.
+   */
+  defaultFocus?: string;
+}
+
+/**
+ * Show a dialog with an arbitrary set of buttons (3+ supported) and resolve
+ * WHICH button was chosen — for decisions that don't reduce to true/false
+ * (e.g. Save / Don't Save / Cancel). Additive: `customConfirm` is unchanged.
+ *
+ * Resolves the clicked button's `value`. Dismiss (Escape / × / backdrop, where
+ * enabled) resolves the role:'cancel' button's value, or `null` if none. Never
+ * rejects. Throws synchronously if `buttons` is empty.
+ */
+export function customChoice(options: ChoiceOptions): Promise<string | null>;
+
 /* ============================ Toast notifications ========================== */
 
 export type ToastVariant = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
@@ -172,6 +234,7 @@ export interface CustomDialogApi {
   alert: typeof customAlert;
   confirm: typeof customConfirm;
   prompt: typeof customPrompt;
+  choose: typeof customChoice;
   /** Number of dialogs currently waiting in the queue. */
   readonly queueSize: number;
   // Toast notifications

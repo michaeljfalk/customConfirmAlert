@@ -13,10 +13,31 @@ import {
 import { buildVariantIcon as buildIcon, buildSpinner, buildCloseIcon } from './icons.js';
 
 /** @typedef {'info' | 'success' | 'warning' | 'danger'} Variant */
-/** @typedef {'alert' | 'confirm' | 'prompt'} DialogType */
+/** @typedef {'alert' | 'confirm' | 'prompt' | 'choice'} DialogType */
 /** @typedef {'confirm' | 'cancel' | 'input' | 'none'} DefaultFocus */
+/** @typedef {{ value: string, text: string, variant?: 'primary'|'danger'|'neutral'|'secondary', role?: 'cancel' }} ChoiceButton */
 
 const VARIANTS = new Set(['info', 'success', 'warning', 'danger']);
+
+/**
+ * Map a choice button's `variant` to the matching `.cd-btn-*` style class,
+ * reusing the existing dialog button styling. Unknown/omitted → neutral.
+ * @param {ChoiceButton['variant']} [variant]
+ * @returns {string}
+ */
+function choiceButtonClass(variant) {
+  switch (variant) {
+    case 'primary':
+      return 'cd-btn-primary';
+    case 'danger':
+      return 'cd-btn-danger';
+    case 'secondary':
+      return 'cd-btn-secondary';
+    case 'neutral':
+    default:
+      return 'cd-btn-neutral';
+  }
+}
 
 /**
  * One modal dialog. Construct, call {@link Dialog#open}, await the returned
@@ -185,27 +206,31 @@ export class Dialog {
     const footer = document.createElement('div');
     footer.className = 'cd-footer';
 
-    if (o.type !== 'alert') {
-      const cancelBtn = document.createElement('button');
-      cancelBtn.type = 'button';
-      cancelBtn.className = 'cd-btn cd-btn-cancel';
-      cancelBtn.textContent = o.cancelText;
-      cancelBtn.addEventListener('click', () => this.cancel());
-      footer.appendChild(cancelBtn);
-      this.els.cancelBtn = cancelBtn;
-    }
+    if (o.type === 'choice') {
+      this.buildChoiceButtons(footer);
+    } else {
+      if (o.type !== 'alert') {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'cd-btn cd-btn-cancel';
+        cancelBtn.textContent = o.cancelText;
+        cancelBtn.addEventListener('click', () => this.cancel());
+        footer.appendChild(cancelBtn);
+        this.els.cancelBtn = cancelBtn;
+      }
 
-    const confirmBtn = document.createElement('button');
-    confirmBtn.type = 'button';
-    confirmBtn.className = `cd-btn cd-btn-confirm cd-btn-${o.variant}`;
-    const confirmLabel = document.createElement('span');
-    confirmLabel.className = 'cd-btn-label';
-    confirmLabel.textContent = o.confirmText;
-    confirmBtn.appendChild(confirmLabel);
-    confirmBtn.addEventListener('click', () => this.submit());
-    footer.appendChild(confirmBtn);
-    this.els.confirmBtn = confirmBtn;
-    this.els.confirmLabel = confirmLabel;
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = `cd-btn cd-btn-confirm cd-btn-${o.variant}`;
+      const confirmLabel = document.createElement('span');
+      confirmLabel.className = 'cd-btn-label';
+      confirmLabel.textContent = o.confirmText;
+      confirmBtn.appendChild(confirmLabel);
+      confirmBtn.addEventListener('click', () => this.submit());
+      footer.appendChild(confirmBtn);
+      this.els.confirmBtn = confirmBtn;
+      this.els.confirmLabel = confirmLabel;
+    }
 
     dialog.appendChild(footer);
 
@@ -223,8 +248,46 @@ export class Dialog {
     this.els.footer = footer;
   }
 
+  /**
+   * Render the N footer buttons for a {@link customChoice} dialog, in array
+   * order. Each resolves the dialog with its own `value`.
+   * @param {HTMLElement} footer
+   */
+  buildChoiceButtons(footer) {
+    /** @type {{ el: HTMLButtonElement, value: string }[]} */
+    this.els.choiceButtons = [];
+    /** @type {Map<string, HTMLButtonElement>} */
+    this.els.choiceByValue = new Map();
+
+    for (const b of this.options.buttons) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `cd-btn ${choiceButtonClass(b.variant)}`;
+      btn.textContent = b.text;
+      btn.setAttribute('data-cd-value', String(b.value));
+      if (b.role === 'cancel') {
+        btn.setAttribute('data-cd-role', 'cancel');
+        this.els.choiceCancelBtn = btn;
+      }
+      btn.addEventListener('click', () => this.choose(b.value));
+      footer.appendChild(btn);
+      this.els.choiceButtons.push({ el: btn, value: b.value });
+      this.els.choiceByValue.set(b.value, btn);
+    }
+  }
+
+  /**
+   * Resolve a choice dialog with the clicked button's value.
+   * @param {string} value
+   */
+  choose(value) {
+    if (this.settled || this.pending) return;
+    this.close(value);
+  }
+
   /** @returns {HTMLElement | null} The element to focus on open. */
   getInitialFocus() {
+    if (this.type === 'choice') return this.getChoiceInitialFocus();
     switch (this.options.defaultFocus) {
       case 'input':
         return this.els.input || this.els.confirmBtn;
@@ -239,6 +302,22 @@ export class Dialog {
     }
   }
 
+  /**
+   * Initial focus for a choice dialog: the button whose `value` matches
+   * `defaultFocus`, else the role:'cancel' button, else the last button.
+   * @returns {HTMLElement | null}
+   */
+  getChoiceInitialFocus() {
+    const df = this.options.defaultFocus;
+    if (df && df !== 'cancel') {
+      const byValue = this.els.choiceByValue.get(df);
+      if (byValue) return byValue;
+    }
+    if (this.els.choiceCancelBtn) return this.els.choiceCancelBtn;
+    const buttons = this.els.choiceButtons;
+    return buttons.length ? buttons[buttons.length - 1].el : this.els.dialog;
+  }
+
   /** @param {KeyboardEvent} e */
   handleKeydown(e) {
     if (e.key === 'Escape') {
@@ -249,6 +328,9 @@ export class Dialog {
       return;
     }
     if (e.key === 'Enter') {
+      // Choice dialogs have no single "confirm" action: let Enter fall through
+      // to the focused button's native activation.
+      if (this.type === 'choice') return;
       const target = /** @type {HTMLElement} */ (e.target);
       // Let Enter inside the input (or anywhere) trigger the confirm action,
       // unless focus is on the cancel/close button.
@@ -274,6 +356,7 @@ export class Dialog {
 
   /** @returns {any} The resolution value for a cancellation. */
   cancelValue() {
+    if (this.type === 'choice') return this.options.hasCancel ? this.options.cancelValue : null;
     if (this.type === 'confirm') return false;
     if (this.type === 'prompt') return null;
     return undefined;
@@ -388,7 +471,16 @@ export class Dialog {
 
     const resolve = this._resolve;
     this._resolve = null;
+    const onClose = this.options.onClose;
     this.els = {};
+    // Fire the optional onClose hook before resolving; never let it wedge teardown.
+    if (typeof onClose === 'function') {
+      try {
+        onClose(value);
+      } catch (_) {
+        /* swallow: onClose must not break cleanup or the promise */
+      }
+    }
     if (resolve) resolve(value);
   }
 }

@@ -166,6 +166,110 @@ export function customPrompt(options) {
   return show('prompt', options);
 }
 
+/**
+ * @typedef {Object} ChoiceButton
+ * @property {string} value - Resolved when this button is clicked.
+ * @property {string} text - Button label.
+ * @property {'primary'|'danger'|'neutral'|'secondary'} [variant] - Styling. Default: neutral.
+ * @property {'cancel'} [role] - Marks the dismiss button (Esc/×/backdrop resolve to it).
+ */
+
+/**
+ * @typedef {Object} ChoiceOptions
+ * @property {string} [title]
+ * @property {string|Node} [message]
+ * @property {'info'|'success'|'warning'|'danger'} [variant]
+ * @property {string|Node|false} [icon]
+ * @property {boolean} [allowHtml]
+ * @property {boolean} [dismissible]
+ * @property {boolean} [closeOnEscape]
+ * @property {boolean} [closeOnBackdrop]
+ * @property {string} [className]
+ * @property {string} [ariaLabel]
+ * @property {string} [closeLabel]
+ * @property {(value: string|null) => void} [onClose]
+ * @property {ChoiceButton[]} buttons - One or more footer buttons, in order.
+ * @property {string} [defaultFocus] - A button `value`, or 'cancel'.
+ */
+
+/**
+ * Build the normalised option object for a choice dialog. Throws synchronously
+ * on invalid input (empty `buttons`, multiple `role:'cancel'`) so the public
+ * `customChoice` never returns a rejected promise.
+ * @param {ChoiceOptions} input
+ * @returns {object}
+ */
+function normalizeChoiceOptions(input) {
+  const raw = input && typeof input === 'object' ? input : {};
+  const buttons = Array.isArray(raw.buttons) ? raw.buttons : [];
+  if (buttons.length === 0) {
+    throw new Error('customChoice requires at least one button in `buttons`.');
+  }
+
+  let hasCancel = false;
+  let cancelValue = null;
+  const normButtons = buttons.map((b) => {
+    const isCancel = b && b.role === 'cancel';
+    if (isCancel) {
+      if (hasCancel) {
+        throw new Error("customChoice allows at most one button with role:'cancel'.");
+      }
+      hasCancel = true;
+      cancelValue = b.value;
+    }
+    return {
+      value: b.value,
+      text: b && b.text != null ? String(b.text) : '',
+      variant: b && b.variant,
+      role: isCancel ? 'cancel' : undefined,
+    };
+  });
+
+  const variant = VARIANTS.has(raw.variant) ? raw.variant : SHARED_DEFAULTS.variant;
+
+  return {
+    type: 'choice',
+    title: raw.title || '',
+    message: raw.message || '',
+    variant,
+    icon: raw.icon,
+    dismissible: raw.dismissible ?? SHARED_DEFAULTS.dismissible,
+    closeOnEscape: raw.closeOnEscape ?? SHARED_DEFAULTS.closeOnEscape,
+    closeOnBackdrop: raw.closeOnBackdrop ?? SHARED_DEFAULTS.closeOnBackdrop,
+    allowHtml: raw.allowHtml ?? SHARED_DEFAULTS.allowHtml,
+    className: raw.className || '',
+    ariaLabel: raw.ariaLabel,
+    closeLabel: raw.closeLabel,
+    onClose: raw.onClose,
+    buttons: normButtons,
+    hasCancel,
+    cancelValue,
+    // A button `value` or the literal 'cancel'; resolved in Dialog at focus time.
+    defaultFocus: raw.defaultFocus,
+  };
+}
+
+/**
+ * Show a dialog with an arbitrary set of buttons (3+ supported) and resolve
+ * WHICH button was chosen — for decisions that don't reduce to true/false, e.g.
+ * Save / Don't Save / Cancel. Additive: does not affect customConfirm.
+ *
+ * Resolves the clicked button's `value`. Dismiss (Escape / × / backdrop, where
+ * enabled) resolves the role:'cancel' button's value, or `null` if none. Never
+ * rejects. Throws synchronously if `buttons` is empty.
+ * @param {ChoiceOptions} options
+ * @returns {Promise<string|null>}
+ */
+export function customChoice(options) {
+  const normalized = normalizeChoiceOptions(options);
+  return dialogQueue.enqueue(async () => {
+    await whenBodyReady();
+    const root = ensureRoot();
+    const dialog = new Dialog(normalized, root);
+    return dialog.open();
+  });
+}
+
 /* ============================ Toast notifications ========================== */
 /* Non-modal, non-blocking feedback. Architecturally separate from the modal
  * dialog queue: toasts never lock scrolling, inert content, or trap focus, and
@@ -266,6 +370,7 @@ export const CustomDialog = {
   alert: customAlert,
   confirm: customConfirm,
   prompt: customPrompt,
+  choose: customChoice,
   /** @returns {number} Dialogs currently waiting in the queue. */
   get queueSize() {
     return dialogQueue.size;
