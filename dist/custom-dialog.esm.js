@@ -1,4 +1,4 @@
-/*! customConfirmAlert v1.0.0 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
+/*! customConfirmAlert v1.0.1 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */
 
 // src/utils.js
 var FOCUSABLE_SELECTOR = [

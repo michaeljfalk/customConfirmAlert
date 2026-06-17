@@ -12,7 +12,7 @@
  */
 
 import { build } from 'esbuild';
-import { mkdir, copyFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, copyFile, readdir, stat, writeFile, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -21,8 +21,11 @@ const src = join(root, 'src');
 const dist = join(root, 'dist');
 const entry = join(src, 'index.js');
 
+// Read the version from package.json so the banner never drifts on release.
+const { version } = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+
 const banner = {
-  js: '/*! customConfirmAlert v1.0.0 | MIT License | https://github.com/michaeljfalk/customConfirmAlert */',
+  js: `/*! customConfirmAlert v${version} | MIT License | https://github.com/michaeljfalk/customConfirmAlert */`,
 };
 
 /** Footer for the IIFE build: expose named exports on window.CustomDialog and
